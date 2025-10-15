@@ -4,19 +4,17 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import util.Registro;
 
-
 public class Vendedor implements Registro {
 
-    private int id_vendedor;
+    private String cpf; // Agora o CPF é o ID
     private String nome;
     private String[] email;
     private LocalDate data_contratacao;
     private int numero_vendas;
     private float faturamento;
 
-    // construtor padrão
     public Vendedor() {
-        this.id_vendedor = 0;
+        this.cpf = "";
         this.nome = "";
         this.email = new String[0];
         this.data_contratacao = LocalDate.now();
@@ -24,9 +22,8 @@ public class Vendedor implements Registro {
         this.faturamento = 0f;
     }
 
-    // construtor completo
-    public Vendedor(int id, String nome, String[] email, LocalDate data_contratacao, int numero_vendas, float faturamento) {
-        this.id_vendedor = id;
+    public Vendedor(String cpf, String nome, String[] email, LocalDate data_contratacao, int numero_vendas, float faturamento) {
+        this.cpf = cpf;
         this.nome = nome;
         this.email = email;
         this.data_contratacao = data_contratacao;
@@ -38,12 +35,15 @@ public class Vendedor implements Registro {
 
     @Override
     public int getId() {
-        return id_vendedor;
+        // Como a interface exige int, mas temos String (CPF), 
+        // vamos usar o hashCode do CPF como ID numérico
+        return Math.abs(cpf.hashCode());
     }
 
     @Override
     public void setId(int id) {
-        this.id_vendedor = id;
+        // Não podemos converter int para CPF, então este método fica vazio
+        // O CPF deve ser definido via setter
     }
 
     @Override
@@ -51,15 +51,12 @@ public class Vendedor implements Registro {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(baos);
 
-        dos.writeInt(id_vendedor);
+        dos.writeUTF(cpf);
         dos.writeUTF(nome);
-
-        // salva o tamanho do vetor de e-mails
         dos.writeInt(email.length);
         for (String e : email) {
             dos.writeUTF(e);
         }
-
         dos.writeUTF(data_contratacao.toString());
         dos.writeInt(numero_vendas);
         dos.writeFloat(faturamento);
@@ -72,21 +69,22 @@ public class Vendedor implements Registro {
         ByteArrayInputStream bais = new ByteArrayInputStream(ba);
         DataInputStream dis = new DataInputStream(bais);
 
-        id_vendedor = dis.readInt();
+        cpf = dis.readUTF();
         nome = dis.readUTF();
-
         int tam = dis.readInt();
         email = new String[tam];
         for (int i = 0; i < tam; i++) {
             email[i] = dis.readUTF();
         }
-
         data_contratacao = LocalDate.parse(dis.readUTF());
         numero_vendas = dis.readInt();
         faturamento = dis.readFloat();
     }
 
     // ---------------- Getters e Setters ----------------
+
+    public String getCpf() { return cpf; }
+    public void setCpf(String cpf) { this.cpf = cpf; }
 
     public String getNome() { return nome; }
     public void setNome(String nome) { this.nome = nome; }
@@ -107,7 +105,7 @@ public class Vendedor implements Registro {
     public String toString() {
         DateTimeFormatter df = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         StringBuilder sb = new StringBuilder();
-        sb.append("\nID: ").append(id_vendedor);
+        sb.append("\nCPF: ").append(cpf);
         sb.append("\nNome: ").append(nome);
         sb.append("\nData de contratação: ").append(data_contratacao.format(df));
         sb.append("\nE-mails: ");

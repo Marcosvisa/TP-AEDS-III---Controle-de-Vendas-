@@ -14,11 +14,9 @@ public class Arquivo<T extends Registro> {
         this.nomeArquivo = nomeArquivo;
         this.construtor = classe.getDeclaredConstructor();
 
+        File file = new File(this.nomeArquivo);
+        File diretorioPai = file.getParentFile();
 
-         File file = new File(this.nomeArquivo);
-         File diretorioPai = file.getParentFile();
-
-    
         if (diretorioPai != null && !diretorioPai.exists()) {
             if (!diretorioPai.mkdirs()) {
                 throw new IOException("Falha ao criar o diretório: " + diretorioPai.getAbsolutePath());
@@ -27,8 +25,6 @@ public class Arquivo<T extends Registro> {
 
         this.arquivo = new RandomAccessFile(this.nomeArquivo, "rw");
 
-
-        
         if (this.arquivo.length() < 4)
             this.arquivo.writeInt(0); // cabeçalho com último ID
     }
@@ -62,6 +58,34 @@ public class Arquivo<T extends Registro> {
                 obj.fromByteArray(ba);
                 if (obj.getId() == id)
                     return obj;
+            }
+        }
+        return null;
+    }
+
+    // Método adicional para buscar por CPF (String)
+    public T readByCpf(String cpf) throws Exception {
+        arquivo.seek(4);
+        while (arquivo.getFilePointer() < arquivo.length()) {
+            char lapide = arquivo.readChar();
+            int tam = arquivo.readInt();
+            byte[] ba = new byte[tam];
+            arquivo.read(ba);
+
+            if (lapide == ' ') {
+                T obj = construtor.newInstance();
+                obj.fromByteArray(ba);
+                
+                // Usa reflection para verificar se o objeto tem método getCpf()
+                try {
+                    java.lang.reflect.Method getCpfMethod = obj.getClass().getMethod("getCpf");
+                    String objCpf = (String) getCpfMethod.invoke(obj);
+                    if (objCpf.equals(cpf)) {
+                        return obj;
+                    }
+                } catch (Exception e) {
+                    // Se não tiver método getCpf, continua a busca
+                }
             }
         }
         return null;
@@ -107,6 +131,36 @@ public class Arquivo<T extends Registro> {
         return false;
     }
 
+    // Método adicional para deletar por CPF
+    public boolean deleteByCpf(String cpf) throws Exception {
+        arquivo.seek(4);
+        while (arquivo.getFilePointer() < arquivo.length()) {
+            long pos = arquivo.getFilePointer();
+            char lapide = arquivo.readChar();
+            int tam = arquivo.readInt();
+            byte[] ba = new byte[tam];
+            arquivo.read(ba);
+
+            if (lapide == ' ') {
+                T obj = construtor.newInstance();
+                obj.fromByteArray(ba);
+                
+                try {
+                    java.lang.reflect.Method getCpfMethod = obj.getClass().getMethod("getCpf");
+                    String objCpf = (String) getCpfMethod.invoke(obj);
+                    if (objCpf.equals(cpf)) {
+                        arquivo.seek(pos);
+                        arquivo.writeChar('*');
+                        return true;
+                    }
+                } catch (Exception e) {
+                    // Se não tiver método getCpf, continua a busca
+                }
+            }
+        }
+        return false;
+    }
+
     public boolean update(T objAtualizado) throws Exception {
         arquivo.seek(4);
         while (arquivo.getFilePointer() < arquivo.length()) {
@@ -144,21 +198,21 @@ public class Arquivo<T extends Registro> {
     }
 
     public long createWithOffset(T obj) throws Exception {
-    arquivo.seek(0);
-    int ultimoID = arquivo.readInt();
-    int novoID = ultimoID + 1;
-    arquivo.seek(0);
-    arquivo.writeInt(novoID);
-    obj.setId(novoID);
+        arquivo.seek(0);
+        int ultimoID = arquivo.readInt();
+        int novoID = ultimoID + 1;
+        arquivo.seek(0);
+        arquivo.writeInt(novoID);
+        obj.setId(novoID);
 
-    arquivo.seek(arquivo.length());
-    long offset = arquivo.getFilePointer(); // Captura o offset
-    
-    byte[] ba = obj.toByteArray();
-    arquivo.writeChar(' '); 
-    arquivo.writeInt(ba.length);
-    arquivo.write(ba);
-    
-    return offset; // Retorna o offset
-}
+        arquivo.seek(arquivo.length());
+        long offset = arquivo.getFilePointer();
+        
+        byte[] ba = obj.toByteArray();
+        arquivo.writeChar(' '); 
+        arquivo.writeInt(ba.length);
+        arquivo.write(ba);
+        
+        return offset;
+    }
 }

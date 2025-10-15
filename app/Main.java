@@ -4,31 +4,29 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.Arrays; // Para imprimir arrays de IDs de autopeças
+import java.util.Arrays;
 import model.*;
 import dao.*;
 
 public class Main {
-    private static IndiceVendedorCarros indiceVendedorCarros;
     private static Scanner sc = new Scanner(System.in);
     private static final DateTimeFormatter DF = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     
-    // DAOs (Assumindo que estão no pacote padrão para evitar erros de importação)
+    // DAOs atualizados
     private static VendedorDAO vendedorDAO;
+    private static ClienteDAO clienteDAO;
     private static CarroDAO carroDAO;
-    private static AutopecasDAO autopecasDAO;
-    private static VendaAutopecasDAO vendaAutopecasDAO;
-
+    private static VendaDAO vendaDAO;
 
     public static void main(String[] args) {
         
         try {
-            // Inicializa todos os DAOs. Isso garante que os arquivos de dados estejam prontos.
+            // Inicializa todos os DAOs
             vendedorDAO = new VendedorDAO();
+            clienteDAO = new ClienteDAO();
             carroDAO = new CarroDAO();
-            autopecasDAO = new AutopecasDAO();
-            vendaAutopecasDAO = new VendaAutopecasDAO();
-            indiceVendedorCarros = new IndiceVendedorCarros();
+            vendaDAO = new VendaDAO();
+            
             int opcao = -1;
 
             do {
@@ -40,13 +38,13 @@ public class Main {
                             gerenciarVendedores();
                             break;
                         case 2:
-                            gerenciarCarros();
+                            gerenciarClientes();
                             break;
                         case 3:
-                            gerenciarAutopecas();
+                            gerenciarCarros();
                             break;
                         case 4:
-                            gerenciarVendasAutopecas();
+                            gerenciarVendas();
                             break;
                         case 0:
                             System.out.println("Saindo do sistema. Adeus!");
@@ -63,11 +61,11 @@ public class Main {
                 }
             } while (opcao != 0);
             
-            // Fecha os arquivos ao sair.
+            // Fecha os arquivos ao sair
             vendedorDAO.close();
+            clienteDAO.close();
             carroDAO.close();
-            autopecasDAO.close();
-            vendaAutopecasDAO.close();
+            vendaDAO.close();
 
         } catch (Exception e) {
             System.err.println("Erro fatal ao inicializar o sistema: " + e.getMessage());
@@ -80,25 +78,20 @@ public class Main {
     private static void exibirMenuPrincipal() {
         System.out.println("\n----------- Menu Principal -----------");
         System.out.println("1 - Gerenciar Vendedores");
-        System.out.println("2 - Gerenciar Carros");
-        System.out.println("3 - Gerenciar Autopeças");
-        System.out.println("4 - Gerenciar Vendas de Autopeças");
+        System.out.println("2 - Gerenciar Clientes");
+        System.out.println("3 - Gerenciar Carros");
+        System.out.println("4 - Gerenciar Vendas");
         System.out.println("0 - Sair");
         System.out.print("Escolha uma opção: ");
     }
     
-    /**
-     * Tenta ler um LocalDate do console.
-     * @param prompt A mensagem a ser exibida.
-     * @return O LocalDate lido ou null em caso de erro.
-     */
     private static LocalDate lerData(String prompt) {
         LocalDate data = null;
         boolean valido = false;
         do {
             System.out.print(prompt + " (formato dd/MM/yyyy): ");
             String dataStr = sc.nextLine();
-            if (dataStr.trim().isEmpty()) return null; // Permite pular
+            if (dataStr.trim().isEmpty()) return null;
             try {
                 data = LocalDate.parse(dataStr, DF);
                 valido = true;
@@ -110,7 +103,51 @@ public class Main {
     }
 
     // ======================================================================
-    // MÉTODOS DE GERENCIAMENTO DE VENDEDORES (Já estavam implementados)
+    // MÉTODOS AUXILIARES PARA BUSCA POR CPF
+    // ======================================================================
+
+    private static Vendedor buscarVendedorPorCpf(String cpf) throws Exception {
+        ArrayList<Vendedor> vendedores = vendedorDAO.readAll();
+        for (Vendedor v : vendedores) {
+            if (v.getCpf().equals(cpf)) {
+                return v;
+            }
+        }
+        return null;
+    }
+
+    private static Cliente buscarClientePorCpf(String cpf) throws Exception {
+        ArrayList<Cliente> clientes = clienteDAO.readAll();
+        for (Cliente c : clientes) {
+            if (c.getCpf().equals(cpf)) {
+                return c;
+            }
+        }
+        return null;
+    }
+
+    private static boolean deletarVendedorPorCpf(String cpf) throws Exception {
+        ArrayList<Vendedor> vendedores = vendedorDAO.readAll();
+        for (Vendedor v : vendedores) {
+            if (v.getCpf().equals(cpf)) {
+                return vendedorDAO.delete(v.getId());
+            }
+        }
+        return false;
+    }
+
+    private static boolean deletarClientePorCpf(String cpf) throws Exception {
+        ArrayList<Cliente> clientes = clienteDAO.readAll();
+        for (Cliente c : clientes) {
+            if (c.getCpf().equals(cpf)) {
+                return clienteDAO.delete(c.getId());
+            }
+        }
+        return false;
+    }
+
+    // ======================================================================
+    // MÉTODOS DE GERENCIAMENTO DE VENDEDORES 
     // ======================================================================
 
     private static void gerenciarVendedores() throws Exception {
@@ -118,7 +155,7 @@ public class Main {
         do {
             System.out.println("\n----- Gerenciar Vendedores -----");
             System.out.println("1 - Incluir Vendedor (Create)");
-            System.out.println("2 - Buscar Vendedor por ID (Read)");
+            System.out.println("2 - Buscar Vendedor por CPF (Read)");
             System.out.println("3 - Listar Todos os Vendedores (Read All)");
             System.out.println("4 - Atualizar Vendedor (Update)");
             System.out.println("5 - Excluir Vendedor (Delete)");
@@ -148,6 +185,16 @@ public class Main {
     
     private static void incluirVendedor() throws Exception {
         System.out.println("\n-- Inclusão de Novo Vendedor --");
+        
+        System.out.print("CPF: ");
+        String cpf = sc.nextLine();
+        
+        // Verifica se já existe vendedor com este CPF
+        if (buscarVendedorPorCpf(cpf) != null) {
+            System.out.println("Já existe um vendedor com este CPF!");
+            return;
+        }
+        
         System.out.print("Nome: ");
         String nome = sc.nextLine();
         
@@ -157,23 +204,25 @@ public class Main {
             emails[i] = emails[i].trim();
         }
         
-        Vendedor novoVendedor = new Vendedor(0, nome, emails, LocalDate.now(), 0, 0f);
-        int novoId = vendedorDAO.create(novoVendedor);
-        System.out.println("Vendedor incluído com sucesso! ID: " + novoId);
+        LocalDate dataContratacao = lerData("Data de contratação (ou deixe em branco para hoje)");
+        if (dataContratacao == null) dataContratacao = LocalDate.now();
+        
+        Vendedor novoVendedor = new Vendedor(cpf, nome, emails, dataContratacao, 0, 0f);
+        vendedorDAO.create(novoVendedor);
+        System.out.println("Vendedor incluído com sucesso! CPF: " + cpf);
     }
 
     private static void buscarVendedor() throws Exception {
         System.out.println("\n-- Busca de Vendedor --");
-        System.out.print("ID do Vendedor a buscar: ");
-        try {
-            int id = Integer.parseInt(sc.nextLine());
-            Vendedor vendedor = vendedorDAO.read(id);
-            if (vendedor != null) {
-                System.out.println("Vendedor encontrado: " + vendedor.toString());
-            } else {
-                System.out.println("Vendedor com ID " + id + " não encontrado.");
-            }
-        } catch (NumberFormatException e) { System.out.println("ID inválido."); }
+        System.out.print("CPF do Vendedor a buscar: ");
+        String cpf = sc.nextLine();
+        
+        Vendedor vendedor = buscarVendedorPorCpf(cpf);
+        if (vendedor != null) {
+            System.out.println("Vendedor encontrado: " + vendedor.toString());
+        } else {
+            System.out.println("Vendedor com CPF " + cpf + " não encontrado.");
+        }
     }
 
     private static void listarTodosVendedores() throws Exception {
@@ -190,62 +239,196 @@ public class Main {
 
     private static void atualizarVendedor() throws Exception {
         System.out.println("\n-- Atualização de Vendedor --");
-        System.out.print("ID do Vendedor a atualizar: ");
-        try {
-            int id = Integer.parseInt(sc.nextLine());
-            Vendedor vendedor = vendedorDAO.read(id);
-            if (vendedor != null) {
-                System.out.println("Vendedor atual: " + vendedor.toString());
+        System.out.print("CPF do Vendedor a atualizar: ");
+        String cpf = sc.nextLine();
+        
+        Vendedor vendedor = buscarVendedorPorCpf(cpf);
+        if (vendedor != null) {
+            System.out.println("Vendedor atual: " + vendedor.toString());
 
-                System.out.print("Novo Nome (deixe em branco para manter '" + vendedor.getNome() + "'): ");
-                String novoNome = sc.nextLine();
-                if (!novoNome.trim().isEmpty()) {
-                    vendedor.setNome(novoNome);
-                }
-
-                System.out.print("Novos Emails (separados por vírgula, deixe em branco para manter): ");
-                String novosEmailsStr = sc.nextLine();
-                if (!novosEmailsStr.trim().isEmpty()) {
-                    String[] novosEmails = novosEmailsStr.split(",");
-                    for (int i = 0; i < novosEmails.length; i++) {
-                        novosEmails[i] = novosEmails[i].trim();
-                    }
-                    vendedor.setEmail(novosEmails);
-                }
-                
-                System.out.print("Novo Faturamento (deixe em branco para manter " + vendedor.getFaturamento() + "): ");
-                String novoFaturamentoStr = sc.nextLine();
-                if (!novoFaturamentoStr.trim().isEmpty()) {
-                    try {
-                        float novoFaturamento = Float.parseFloat(novoFaturamentoStr);
-                        vendedor.setFaturamento(novoFaturamento);
-                    } catch (NumberFormatException e) {
-                        System.out.println("Faturamento inválido. Mantendo o anterior.");
-                    }
-                }
-
-                if (vendedorDAO.update(vendedor)) {
-                    System.out.println("Vendedor atualizado com sucesso!");
-                } else {
-                    System.out.println("Erro ao atualizar o vendedor.");
-                }
-            } else {
-                System.out.println("Vendedor com ID " + id + " não encontrado.");
+            System.out.print("Novo Nome (deixe em branco para manter '" + vendedor.getNome() + "'): ");
+            String novoNome = sc.nextLine();
+            if (!novoNome.trim().isEmpty()) {
+                vendedor.setNome(novoNome);
             }
-        } catch (NumberFormatException e) { System.out.println("ID inválido."); }
+
+            System.out.print("Novos Emails (separados por vírgula, deixe em branco para manter): ");
+            String novosEmailsStr = sc.nextLine();
+            if (!novosEmailsStr.trim().isEmpty()) {
+                String[] novosEmails = novosEmailsStr.split(",");
+                for (int i = 0; i < novosEmails.length; i++) {
+                    novosEmails[i] = novosEmails[i].trim();
+                }
+                vendedor.setEmail(novosEmails);
+            }
+
+            if (vendedorDAO.update(vendedor)) {
+                System.out.println("Vendedor atualizado com sucesso!");
+            } else {
+                System.out.println("Erro ao atualizar o vendedor.");
+            }
+        } else {
+            System.out.println("Vendedor com CPF " + cpf + " não encontrado.");
+        }
     }
     
     private static void excluirVendedor() throws Exception {
         System.out.println("\n-- Exclusão de Vendedor --");
-        System.out.print("ID do Vendedor a excluir: ");
-        try {
-            int id = Integer.parseInt(sc.nextLine());
-            if (vendedorDAO.delete(id)) {
-                System.out.println("Vendedor com ID " + id + " excluído (marcado como inativo) com sucesso!");
-            } else {
-                System.out.println("Vendedor com ID " + id + " não encontrado.");
+        System.out.print("CPF do Vendedor a excluir: ");
+        String cpf = sc.nextLine();
+        
+        if (deletarVendedorPorCpf(cpf)) {
+            System.out.println("Vendedor com CPF " + cpf + " excluído com sucesso!");
+        } else {
+            System.out.println("Vendedor com CPF " + cpf + " não encontrado.");
+        }
+    }
+
+    // ======================================================================
+    // MÉTODOS DE GERENCIAMENTO DE CLIENTES
+    // ======================================================================
+
+    private static void gerenciarClientes() throws Exception {
+        int subOpcao = -1;
+        do {
+            System.out.println("\n----- Gerenciar Clientes -----");
+            System.out.println("1 - Incluir Cliente (Create)");
+            System.out.println("2 - Buscar Cliente por CPF (Read)");
+            System.out.println("3 - Listar Todos os Clientes (Read All)");
+            System.out.println("4 - Atualizar Cliente (Update)");
+            System.out.println("5 - Excluir Cliente (Delete)");
+            System.out.println("0 - Voltar ao Menu Principal");
+            System.out.print("Escolha uma opção: ");
+
+            try {
+                subOpcao = Integer.parseInt(sc.nextLine());
+                switch (subOpcao) {
+                    case 1: incluirCliente(); break;
+                    case 2: buscarCliente(); break;
+                    case 3: listarTodosClientes(); break;
+                    case 4: atualizarCliente(); break;
+                    case 5: excluirCliente(); break;
+                    case 0: System.out.println("Voltando..."); break;
+                    default: System.out.println("Opção inválida. Tente novamente.");
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Entrada inválida. Por favor, digite um número.");
+                subOpcao = -1;
+            } catch (Exception e) {
+                System.out.println("Erro na operação: " + e.getMessage());
+                e.printStackTrace();
             }
-        } catch (NumberFormatException e) { System.out.println("ID inválido."); }
+        } while (subOpcao != 0);
+    }
+    
+    private static void incluirCliente() throws Exception {
+        System.out.println("\n-- Inclusão de Novo Cliente --");
+        
+        System.out.print("CPF: ");
+        String cpf = sc.nextLine();
+        
+        // Verifica se já existe cliente com este CPF
+        if (buscarClientePorCpf(cpf) != null) {
+            System.out.println("Já existe um cliente com este CPF!");
+            return;
+        }
+        
+        System.out.print("Nome: ");
+        String nome = sc.nextLine();
+        
+        System.out.print("Emails (separados por vírgula): ");
+        String[] emails = sc.nextLine().split(",");
+        for (int i = 0; i < emails.length; i++) {
+            emails[i] = emails[i].trim();
+        }
+        
+        System.out.print("Telefone: ");
+        String telefone = sc.nextLine();
+        
+        LocalDate dataCadastro = lerData("Data de cadastro (ou deixe em branco para hoje)");
+        if (dataCadastro == null) dataCadastro = LocalDate.now();
+        
+        Cliente novoCliente = new Cliente(cpf, nome, emails, dataCadastro, telefone);
+        clienteDAO.create(novoCliente);
+        System.out.println("Cliente incluído com sucesso! CPF: " + cpf);
+    }
+
+    private static void buscarCliente() throws Exception {
+        System.out.println("\n-- Busca de Cliente --");
+        System.out.print("CPF do Cliente a buscar: ");
+        String cpf = sc.nextLine();
+        
+        Cliente cliente = buscarClientePorCpf(cpf);
+        if (cliente != null) {
+            System.out.println("Cliente encontrado: " + cliente.toString());
+        } else {
+            System.out.println("Cliente com CPF " + cpf + " não encontrado.");
+        }
+    }
+
+    private static void listarTodosClientes() throws Exception {
+        System.out.println("\n-- Lista de Todos os Clientes --");
+        ArrayList<Cliente> lista = clienteDAO.readAll();
+        if (lista.isEmpty()) {
+            System.out.println("Nenhum cliente cadastrado.");
+        } else {
+            for (Cliente c : lista) {
+                System.out.println(c.toString());
+            }
+        }
+    }
+
+    private static void atualizarCliente() throws Exception {
+        System.out.println("\n-- Atualização de Cliente --");
+        System.out.print("CPF do Cliente a atualizar: ");
+        String cpf = sc.nextLine();
+        
+        Cliente cliente = buscarClientePorCpf(cpf);
+        if (cliente != null) {
+            System.out.println("Cliente atual: " + cliente.toString());
+
+            System.out.print("Novo Nome (deixe em branco para manter '" + cliente.getNome() + "'): ");
+            String novoNome = sc.nextLine();
+            if (!novoNome.trim().isEmpty()) {
+                cliente.setNome(novoNome);
+            }
+
+            System.out.print("Novos Emails (separados por vírgula, deixe em branco para manter): ");
+            String novosEmailsStr = sc.nextLine();
+            if (!novosEmailsStr.trim().isEmpty()) {
+                String[] novosEmails = novosEmailsStr.split(",");
+                for (int i = 0; i < novosEmails.length; i++) {
+                    novosEmails[i] = novosEmails[i].trim();
+                }
+                cliente.setEmail(novosEmails);
+            }
+
+            System.out.print("Novo Telefone (deixe em branco para manter '" + cliente.getTelefone() + "'): ");
+            String novoTelefone = sc.nextLine();
+            if (!novoTelefone.trim().isEmpty()) {
+                cliente.setTelefone(novoTelefone);
+            }
+
+            if (clienteDAO.update(cliente)) {
+                System.out.println("Cliente atualizado com sucesso!");
+            } else {
+                System.out.println("Erro ao atualizar o cliente.");
+            }
+        } else {
+            System.out.println("Cliente com CPF " + cpf + " não encontrado.");
+        }
+    }
+    
+    private static void excluirCliente() throws Exception {
+        System.out.println("\n-- Exclusão de Cliente --");
+        System.out.print("CPF do Cliente a excluir: ");
+        String cpf = sc.nextLine();
+        
+        if (deletarClientePorCpf(cpf)) {
+            System.out.println("Cliente com CPF " + cpf + " excluído com sucesso!");
+        } else {
+            System.out.println("Cliente com CPF " + cpf + " não encontrado.");
+        }
     }
 
     // ======================================================================
@@ -286,58 +469,32 @@ public class Main {
     }
     
     private static void incluirCarro() throws Exception {
-    System.out.println("\n-- Inclusão de Novo Carro --");
-    
-    // --- 1. Leitura dos dados do Carro ---
-    System.out.print("Modelo: ");
-    String modelo = sc.nextLine();
-    
-    System.out.print("Cores disponíveis (separadas por vírgula): ");
-    String[] cores = sc.nextLine().split(",");
-    for (int i = 0; i < cores.length; i++) {
-        cores[i] = cores[i].trim();
-    }
+        System.out.println("\n-- Inclusão de Novo Carro --");
+        
+        System.out.print("Modelo: ");
+        String modelo = sc.nextLine();
+        
+        System.out.print("Cores disponíveis (separadas por vírgula): ");
+        String[] cores = sc.nextLine().split(",");
+        for (int i = 0; i < cores.length; i++) {
+            cores[i] = cores[i].trim();
+        }
 
-    LocalDate dataFab = lerData("Data de fabricação (ou deixe em branco para hoje)");
-    if (dataFab == null) dataFab = LocalDate.now();
-    
-    float preco = 0f;
-    System.out.print("Preço: R$ ");
-    try { 
-        preco = Float.parseFloat(sc.nextLine()); 
-    } catch (NumberFormatException e) { 
-        System.out.println("Preço inválido. Usando R$ 0.0."); 
+        LocalDate dataFab = lerData("Data de fabricação (ou deixe em branco para hoje)");
+        if (dataFab == null) dataFab = LocalDate.now();
+        
+        float preco = 0f;
+        System.out.print("Preço: R$ ");
+        try { 
+            preco = Float.parseFloat(sc.nextLine()); 
+        } catch (NumberFormatException e) { 
+            System.out.println("Preço inválido. Usando R$ 0.0."); 
+        }
+        
+        Carro novoCarro = new Carro(0, modelo, cores, dataFab, preco);
+        int novoId = carroDAO.create(novoCarro);
+        System.out.println("Carro incluído com sucesso! ID: " + novoId);
     }
-    
-    // --- 2. Leitura da Chave Estrangeira (ID Vendedor) ---
-    int idVendedor = 0;
-    System.out.print("ID do Vendedor responsável pela venda: ");
-    try { 
-        idVendedor = Integer.parseInt(sc.nextLine()); 
-    } catch (NumberFormatException e) { 
-        System.out.println("ID Vendedor inválido. Usando ID 0."); 
-    }
-    
-    // --- 3. Criação do Objeto ---
-    // NOVO CONSTRUTOR: Carro(id, modelo, cores, data_fabricacao, preco, id_vendedor)
-    Carro novoCarro = new Carro(0, modelo, cores, dataFab, preco, idVendedor);
-    
-    // --- 4. Persistência e Obtenção do Offset ---
-    // Requer que CarroDAO utilize o método createWithOffset() da classe Arquivo<T>
-    long offsetCarro = carroDAO.createWithOffset(novoCarro); 
-    int novoId = novoCarro.getId(); // ID gerado pelo DAO
-
-    // --- 5. Indexação no Hash Extensível (Índice Secundário) ---
-    // A chave é o idVendedor, e o valor é o offset do Carro no arquivo de dados
-    if (indiceVendedorCarros.create(idVendedor, offsetCarro)) {
-         System.out.println("Vendedor ID " + idVendedor + " indexado com sucesso no Hash Extensível (Primeiro Carro).");
-    } else {
-         System.out.println("Aviso: Vendedor ID " + idVendedor + " já possuía uma entrada no índice Hash.");
-         System.out.println("O carro foi salvo, mas a busca rápida pelo Hash continuará retornando o primeiro registro indexado.");
-    }
-    
-    System.out.println("Carro incluído com sucesso! ID: " + novoId);
-}
 
     private static void buscarCarro() throws Exception {
         System.out.println("\n-- Busca de Carro --");
@@ -423,7 +580,7 @@ public class Main {
         try {
             int id = Integer.parseInt(sc.nextLine());
             if (carroDAO.delete(id)) {
-                System.out.println("Carro com ID " + id + " excluído (marcado como inativo) com sucesso!");
+                System.out.println("Carro com ID " + id + " excluído com sucesso!");
             } else {
                 System.out.println("Carro com ID " + id + " não encontrado.");
             }
@@ -431,158 +588,13 @@ public class Main {
     }
 
     // ======================================================================
-    // MÉTODOS DE GERENCIAMENTO DE AUTOPEÇAS
+    // MÉTODOS DE GERENCIAMENTO DE VENDAS
     // ======================================================================
 
-    private static void gerenciarAutopecas() throws Exception {
+    private static void gerenciarVendas() throws Exception {
         int subOpcao = -1;
         do {
-            System.out.println("\n----- Gerenciar Autopeças -----");
-            System.out.println("1 - Incluir Autopeça (Create)");
-            System.out.println("2 - Buscar Autopeça por ID (Read)");
-            System.out.println("3 - Listar Todas as Autopeças (Read All)");
-            System.out.println("4 - Atualizar Autopeça (Update)");
-            System.out.println("5 - Excluir Autopeça (Delete)");
-            System.out.println("0 - Voltar ao Menu Principal");
-            System.out.print("Escolha uma opção: ");
-
-            try {
-                subOpcao = Integer.parseInt(sc.nextLine());
-                switch (subOpcao) {
-                    case 1: incluirAutopeca(); break;
-                    case 2: buscarAutopeca(); break;
-                    case 3: listarTodasAutopecas(); break;
-                    case 4: atualizarAutopeca(); break;
-                    case 5: excluirAutopeca(); break;
-                    case 0: System.out.println("Voltando..."); break;
-                    default: System.out.println("Opção inválida. Tente novamente.");
-                }
-            } catch (NumberFormatException e) {
-                System.out.println("Entrada inválida. Por favor, digite um número.");
-                subOpcao = -1;
-            } catch (Exception e) {
-                System.out.println("Erro na operação: " + e.getMessage());
-                e.printStackTrace();
-            }
-        } while (subOpcao != 0);
-    }
-
-    private static void incluirAutopeca() throws Exception {
-        System.out.println("\n-- Inclusão de Nova Autopeça --");
-        System.out.print("Descrição: ");
-        String descricao = sc.nextLine();
-        
-        System.out.print("Tipo: ");
-        String tipo = sc.nextLine();
-        
-        LocalDate dataFab = lerData("Data de fabricação (ou deixe em branco para hoje)");
-        if (dataFab == null) dataFab = LocalDate.now();
-        
-        float preco = 0f;
-        System.out.print("Preço: R$ ");
-        try { preco = Float.parseFloat(sc.nextLine()); } 
-        catch (NumberFormatException e) { System.out.println("Preço inválido. Usando R$ 0.0."); }
-        
-        Autopecas novaPeca = new Autopecas(0, descricao, tipo, dataFab, preco);
-        int novoId = autopecasDAO.create(novaPeca);
-        System.out.println("Autopeça incluída com sucesso! ID: " + novoId);
-    }
-
-    private static void buscarAutopeca() throws Exception {
-        System.out.println("\n-- Busca de Autopeça --");
-        System.out.print("ID da Autopeça a buscar: ");
-        try {
-            int id = Integer.parseInt(sc.nextLine());
-            Autopecas peca = autopecasDAO.read(id);
-            if (peca != null) {
-                System.out.println("Autopeça encontrada: " + peca.toString());
-            } else {
-                System.out.println("Autopeça com ID " + id + " não encontrada.");
-            }
-        } catch (NumberFormatException e) { System.out.println("ID inválido."); }
-    }
-
-    private static void listarTodasAutopecas() throws Exception {
-        System.out.println("\n-- Lista de Todas as Autopeças --");
-        ArrayList<Autopecas> lista = autopecasDAO.readAll();
-        if (lista.isEmpty()) {
-            System.out.println("Nenhuma autopeça cadastrada.");
-        } else {
-            for (Autopecas a : lista) {
-                System.out.println(a.toString());
-            }
-        }
-    }
-
-    private static void atualizarAutopeca() throws Exception {
-        System.out.println("\n-- Atualização de Autopeça --");
-        System.out.print("ID da Autopeça a atualizar: ");
-        try {
-            int id = Integer.parseInt(sc.nextLine());
-            Autopecas peca = autopecasDAO.read(id);
-            if (peca != null) {
-                System.out.println("Autopeça atual: " + peca.toString());
-
-                System.out.print("Nova Descrição (deixe em branco para manter '" + peca.getDescricao() + "'): ");
-                String novaDescricao = sc.nextLine();
-                if (!novaDescricao.trim().isEmpty()) {
-                    peca.setDescricao(novaDescricao);
-                }
-
-                System.out.print("Novo Tipo (deixe em branco para manter '" + peca.getTipo() + "'): ");
-                String novoTipo = sc.nextLine();
-                if (!novoTipo.trim().isEmpty()) {
-                    peca.setTipo(novoTipo);
-                }
-                
-                LocalDate novaDataFab = lerData("Nova Data de fabricação (deixe em branco para manter)");
-                if (novaDataFab != null) {
-                    peca.setData_fabricacao(novaDataFab);
-                }
-                
-                System.out.print("Novo Preço (deixe em branco para manter " + peca.getPreco() + "): R$ ");
-                String novoPrecoStr = sc.nextLine();
-                if (!novoPrecoStr.trim().isEmpty()) {
-                    try {
-                        float novoPreco = Float.parseFloat(novoPrecoStr);
-                        peca.setPreco(novoPreco);
-                    } catch (NumberFormatException e) {
-                        System.out.println("Preço inválido. Mantendo o anterior.");
-                    }
-                }
-
-                if (autopecasDAO.update(peca)) {
-                    System.out.println("Autopeça atualizada com sucesso!");
-                } else {
-                    System.out.println("Erro ao atualizar a autopeça.");
-                }
-            } else {
-                System.out.println("Autopeça com ID " + id + " não encontrada.");
-            }
-        } catch (NumberFormatException e) { System.out.println("ID inválido."); }
-    }
-    
-    private static void excluirAutopeca() throws Exception {
-        System.out.println("\n-- Exclusão de Autopeça --");
-        System.out.print("ID da Autopeça a excluir: ");
-        try {
-            int id = Integer.parseInt(sc.nextLine());
-            if (autopecasDAO.delete(id)) {
-                System.out.println("Autopeça com ID " + id + " excluída (marcada como inativa) com sucesso!");
-            } else {
-                System.out.println("Autopeça com ID " + id + " não encontrada.");
-            }
-        } catch (NumberFormatException e) { System.out.println("ID inválido."); }
-    }
-
-    // ======================================================================
-    // MÉTODOS DE GERENCIAMENTO DE VENDAS DE AUTOPEÇAS
-    // ======================================================================
-
-    private static void gerenciarVendasAutopecas() throws Exception {
-        int subOpcao = -1;
-        do {
-            System.out.println("\n----- Gerenciar Vendas de Autopeças -----");
+            System.out.println("\n----- Gerenciar Vendas -----");
             System.out.println("1 - Registrar Nova Venda (Create)");
             System.out.println("2 - Buscar Venda por ID (Read)");
             System.out.println("3 - Listar Todas as Vendas (Read All)");
@@ -615,43 +627,35 @@ public class Main {
     private static void registrarNovaVenda() throws Exception {
         System.out.println("\n-- Registro de Nova Venda --");
         
-        int idVendedor = 0;
-        int idCarro = 0;
+        String cpfVendedor = "";
+        String cpfCliente = "";
         float valorTotal = 0f;
-        int[] idsAutopecas = new int[0];
+        int[] idsCarros = new int[0];
         
-        // 1. ID Vendedor
+        // 1. CPF Vendedor
         do {
-            System.out.print("ID do Vendedor: ");
-            try {
-                idVendedor = Integer.parseInt(sc.nextLine());
-                if (vendedorDAO.read(idVendedor) == null) {
-                    System.out.println("Vendedor com ID " + idVendedor + " não existe. Tente novamente.");
-                    idVendedor = 0;
-                }
-            } catch (NumberFormatException e) { 
-                System.out.println("ID inválido.");
-                idVendedor = 0;
+            System.out.print("CPF do Vendedor: ");
+            cpfVendedor = sc.nextLine();
+            Vendedor vendedor = buscarVendedorPorCpf(cpfVendedor);
+            if (vendedor == null) {
+                System.out.println("Vendedor com CPF " + cpfVendedor + " não existe. Tente novamente.");
+                cpfVendedor = "";
             }
-        } while (idVendedor == 0);
+        } while (cpfVendedor.isEmpty());
         
-        // 2. ID Carro
+        // 2. CPF Cliente
         do {
-            System.out.print("ID do Carro: ");
-            try {
-                idCarro = Integer.parseInt(sc.nextLine());
-                if (carroDAO.read(idCarro) == null) {
-                    System.out.println("Carro com ID " + idCarro + " não existe. Tente novamente.");
-                    idCarro = 0;
-                }
-            } catch (NumberFormatException e) { 
-                System.out.println("ID inválido.");
-                idCarro = 0;
+            System.out.print("CPF do Cliente: ");
+            cpfCliente = sc.nextLine();
+            Cliente cliente = buscarClientePorCpf(cpfCliente);
+            if (cliente == null) {
+                System.out.println("Cliente com CPF " + cpfCliente + " não existe. Tente novamente.");
+                cpfCliente = "";
             }
-        } while (idCarro == 0);
+        } while (cpfCliente.isEmpty());
 
-        // 3. IDs Autopeças e Cálculo do Valor Total
-        System.out.print("IDs das Autopeças (separados por vírgula e sem espaços, ex: 1,3,5): ");
+        // 3. IDs Carros e Cálculo do Valor Total
+        System.out.print("IDs dos Carros (separados por vírgula e sem espaços, ex: 1,3,5): ");
         String idsStr = sc.nextLine();
         String[] idsArrayStr = idsStr.split(",");
         
@@ -661,39 +665,37 @@ public class Main {
         for (String idS : idsArrayStr) {
             try {
                 int id = Integer.parseInt(idS.trim());
-                Autopecas peca = autopecasDAO.read(id);
-                if (peca != null) {
+                Carro carro = carroDAO.read(id);
+                if (carro != null) {
                     validIds.add(id);
-                    valorTotal += peca.getPreco();
+                    valorTotal += carro.getPreco();
                 } else {
-                    System.out.println("Autopeça com ID " + id + " não encontrada e será ignorada.");
+                    System.out.println("Carro com ID " + id + " não encontrado e será ignorado.");
                 }
             } catch (NumberFormatException e) {
                 // Ignora IDs inválidos
             }
         }
         
-        // Converte a lista de IDs válidos para o array int[] da classe Venda_Autopecas
-        idsAutopecas = validIds.stream().mapToInt(i->i).toArray();
-
-        // Adiciona o preço do carro ao valor total
-        Carro carroVendido = carroDAO.read(idCarro);
-        if(carroVendido != null) {
-            valorTotal += carroVendido.getPreco();
+        if (validIds.isEmpty()) {
+            System.out.println("Nenhum carro válido informado. Venda cancelada.");
+            return;
         }
+        
+        idsCarros = validIds.stream().mapToInt(i->i).toArray();
 
-        System.out.println("Valor total calculado (Carro + Peças): R$ " + valorTotal);
+        System.out.println("Valor total calculado: R$ " + valorTotal);
 
         // 4. Data da Venda
         LocalDate dataVenda = lerData("Data da Venda (ou deixe em branco para hoje)");
         if (dataVenda == null) dataVenda = LocalDate.now();
         
         // 5. Criação do Objeto
-        Venda_Autopecas novaVenda = new Venda_Autopecas(0, idVendedor, idsAutopecas, dataVenda, valorTotal);
-        int novoId = vendaAutopecasDAO.create(novaVenda);
+        Venda novaVenda = new Venda(0, cpfVendedor, cpfCliente, idsCarros, dataVenda, valorTotal);
+        int novoId = vendaDAO.create(novaVenda);
         
-        // Opcional: Atualizar número de vendas do vendedor
-        Vendedor vendedorAtualizado = vendedorDAO.read(idVendedor);
+        // Atualizar número de vendas e faturamento do vendedor
+        Vendedor vendedorAtualizado = buscarVendedorPorCpf(cpfVendedor);
         if (vendedorAtualizado != null) {
             vendedorAtualizado.setNumero_vendas(vendedorAtualizado.getNumero_vendas() + 1);
             vendedorAtualizado.setFaturamento(vendedorAtualizado.getFaturamento() + valorTotal);
@@ -708,7 +710,7 @@ public class Main {
         System.out.print("ID da Venda a buscar: ");
         try {
             int id = Integer.parseInt(sc.nextLine());
-            Venda_Autopecas venda = vendaAutopecasDAO.read(id);
+            Venda venda = vendaDAO.read(id);
             if (venda != null) {
                 System.out.println("Venda encontrada: " + venda.toString());
             } else {
@@ -719,11 +721,11 @@ public class Main {
 
     private static void listarTodasVendas() throws Exception {
         System.out.println("\n-- Lista de Todas as Vendas --");
-        ArrayList<Venda_Autopecas> lista = vendaAutopecasDAO.readAll();
+        ArrayList<Venda> lista = vendaDAO.readAll();
         if (lista.isEmpty()) {
             System.out.println("Nenhuma venda cadastrada.");
         } else {
-            for (Venda_Autopecas v : lista) {
+            for (Venda v : lista) {
                 System.out.println(v.toString());
             }
         }
@@ -734,29 +736,31 @@ public class Main {
         System.out.print("ID da Venda a atualizar: ");
         try {
             int id = Integer.parseInt(sc.nextLine());
-            Venda_Autopecas venda = vendaAutopecasDAO.read(id);
+            Venda venda = vendaDAO.read(id);
             if (venda != null) {
                 System.out.println("Venda atual: " + venda.toString());
-
-                // NOTA: Para simplificar, não faremos o recálculo complexo do valor total e a 
-                // revalidação dos IDs de vendedor/carro/peças. Apenas a data e IDs são alterados.
                 
-                System.out.print("Novo ID Vendedor (deixe em branco para manter " + venda.getId_vendedor() + "): ");
-                String novoIdVendedorStr = sc.nextLine();
-                if (!novoIdVendedorStr.trim().isEmpty()) {
-                    try { venda.setId_vendedor(Integer.parseInt(novoIdVendedorStr)); } 
-                    catch (NumberFormatException e) { System.out.println("ID Vendedor inválido. Mantendo o anterior."); }
+                System.out.print("Novo CPF Vendedor (deixe em branco para manter " + venda.getCpfVendedor() + "): ");
+                String novoCpfVendedor = sc.nextLine();
+                if (!novoCpfVendedor.trim().isEmpty()) {
+                    venda.setCpfVendedor(novoCpfVendedor);
                 }
                 
-                System.out.print("Novos IDs Autopeças (separados por vírgula, deixe em branco para manter " + Arrays.toString(venda.getIds_autopecas()) + "): ");
+                System.out.print("Novo CPF Cliente (deixe em branco para manter " + venda.getCpfCliente() + "): ");
+                String novoCpfCliente = sc.nextLine();
+                if (!novoCpfCliente.trim().isEmpty()) {
+                    venda.setCpfCliente(novoCpfCliente);
+                }
+                
+                System.out.print("Novos IDs Carros (separados por vírgula, deixe em branco para manter " + Arrays.toString(venda.getIdsCarros()) + "): ");
                 String novosIdsStr = sc.nextLine();
                 if (!novosIdsStr.trim().isEmpty()) {
                     try {
                         String[] idsArrayStr = novosIdsStr.split(",");
                         int[] novosIds = Arrays.stream(idsArrayStr).map(String::trim).mapToInt(Integer::parseInt).toArray();
-                        venda.setIds_autopecas(novosIds);
+                        venda.setIdsCarros(novosIds);
                     } catch (NumberFormatException e) {
-                         System.out.println("Algum ID de autopeça inválido. Mantendo o anterior.");
+                         System.out.println("Algum ID de carro inválido. Mantendo o anterior.");
                     }
                 }
                 
@@ -765,9 +769,7 @@ public class Main {
                     venda.setData_venda(novaDataVenda);
                 }
 
-                // O valor total pode ser atualizado manualmente aqui, se necessário.
-                
-                if (vendaAutopecasDAO.update(venda)) {
+                if (vendaDAO.update(venda)) {
                     System.out.println("Venda atualizada com sucesso!");
                 } else {
                     System.out.println("Erro ao atualizar a venda.");
@@ -783,8 +785,8 @@ public class Main {
         System.out.print("ID da Venda a excluir: ");
         try {
             int id = Integer.parseInt(sc.nextLine());
-            if (vendaAutopecasDAO.delete(id)) {
-                System.out.println("Venda com ID " + id + " excluída (marcada como inativa) com sucesso!");
+            if (vendaDAO.delete(id)) {
+                System.out.println("Venda com ID " + id + " excluída com sucesso!");
             } else {
                 System.out.println("Venda com ID " + id + " não encontrada.");
             }
