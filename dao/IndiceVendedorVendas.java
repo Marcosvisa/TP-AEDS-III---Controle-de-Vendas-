@@ -19,16 +19,14 @@ public class IndiceVendedorVendas {
         );
     }
     
-    // Método para adicionar uma venda ao vendedor
+    //método para adicionar uma venda ao vendedor
     public boolean addVenda(String cpfVendedor, long offset) throws Exception {
         ParVendedorVendaOffset parExistente = indice.read(Math.abs(cpfVendedor.hashCode()));
         
         if (parExistente == null) {
-            // Primeira venda deste vendedor
             ParVendedorVendaOffset novoPar = new ParVendedorVendaOffset(cpfVendedor, offset);
             return indice.create(novoPar);
         } else {
-            // Adiciona à lista existente
             parExistente.addOffset(offset);
             return indice.update(parExistente);
         }

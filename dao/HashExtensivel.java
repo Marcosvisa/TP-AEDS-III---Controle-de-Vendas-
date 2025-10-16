@@ -250,11 +250,11 @@ public class HashExtensivel<T extends RegistroHashExtensivel<T>> {
       int q2 = (int) Math.pow(2, profundidadeGlobal);
       long[] novosEnderecos = new long[q2];
       int i = 0;
-      while (i < q1) { // copia o vetor anterior para a primeiro metade do novo vetor
+      while (i < q1) { //copia o vetor anterior para a primeiro metade do novo vetor
         novosEnderecos[i] = enderecos[i];
         i++;
       }
-      while (i < q2) { // copia o vetor anterior para a segunda metade do novo vetor
+      while (i < q2) { //copia o vetor anterior para a segunda metade do novo vetor
         novosEnderecos[i] = enderecos[i - q1];
         i++;
       }
@@ -262,8 +262,6 @@ public class HashExtensivel<T extends RegistroHashExtensivel<T>> {
       return true;
     }
 
-    // Para efeito de determinar o cesto em que o elemento deve ser inserido,
-    // só serão considerados valores absolutos da chave.
     protected int hash(int chave) {
       return Math.abs(chave) % (int) Math.pow(2, profundidadeGlobal);
     }

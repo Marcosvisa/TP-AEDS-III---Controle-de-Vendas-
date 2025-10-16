@@ -67,7 +67,6 @@ public class IndiceCarroVenda {
         }
     }
     
-    // Remove todas as relações de um carro
     public boolean removeCarro(int idCarro) throws Exception {
         try {
             indice.remove(idCarro);
@@ -79,18 +78,16 @@ public class IndiceCarroVenda {
         }
     }
     
-    // Método para debug - imprime a árvore
     public void printTree() {
         indice.printTree();
     }
     
-    // Método para debug - obtém todas as chaves
     public List<Integer> getAllKeys() {
         return indice.getAllKeys();
     }
     
     public void close() throws Exception {
-        // Salva antes de fechar
+
         indice.saveToDisk();
     }
 }

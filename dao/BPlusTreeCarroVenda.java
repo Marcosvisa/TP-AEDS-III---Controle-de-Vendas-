@@ -271,8 +271,6 @@ public class BPlusTreeCarroVenda {
         }
         return false;
     }
-
-    // LISTA todas as relações
     public void printTree() {
         printTree(root, 0);
     }
@@ -305,7 +303,7 @@ public class BPlusTreeCarroVenda {
         return keys;
     }
 
-    // Persistência
+    //persistência
     public void saveToDisk() throws IOException {
         try (ObjectOutputStream oos = new ObjectOutputStream(
              new FileOutputStream(dataFile))) {

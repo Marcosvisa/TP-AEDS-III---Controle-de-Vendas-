@@ -7,8 +7,8 @@ import util.RegistroHashExtensivel;
 public class ParVendedorVendaOffset implements RegistroHashExtensivel<ParVendedorVendaOffset> {
 
   private String cpfVendedor;
-  private List<Long> offsets; // Lista de offsets para múltiplas vendas
-  private short TAMANHO = 500; // Tamanho maior para acomodar a lista
+  private List<Long> offsets; //lista de offsets para múltiplas vendas
+  private short TAMANHO = 500; //tamanho maior para acomodar a lista
 
   public ParVendedorVendaOffset() {
     this.cpfVendedor = "";
@@ -41,13 +41,13 @@ public class ParVendedorVendaOffset implements RegistroHashExtensivel<ParVendedo
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     DataOutputStream dos = new DataOutputStream(baos);
     
-    // Escreve CPF
+    //escreve CPF
     dos.writeUTF(cpfVendedor);
     
-    // Escreve quantidade de offsets
+    //escreve quantidade de offsets
     dos.writeInt(offsets.size());
     
-    // Escreve cada offset
+    //escreve cada offset
     for (Long offset : offsets) {
       dos.writeLong(offset);
     }
@@ -66,24 +66,24 @@ public class ParVendedorVendaOffset implements RegistroHashExtensivel<ParVendedo
     
     this.cpfVendedor = dis.readUTF();
     
-    // Lê quantidade de offsets
+    //lê quantidade de offsets
     int quantidade = dis.readInt();
     this.offsets = new ArrayList<>();
     
-    // Lê cada offset
+    //lê cada offset
     for (int i = 0; i < quantidade; i++) {
       offsets.add(dis.readLong());
     }
   }
 
-  // Método para adicionar um offset à lista
+  //método para adicionar um offset à lista
   public void addOffset(long offset) {
     if (!offsets.contains(offset)) {
       offsets.add(offset);
     }
   }
 
-  // Método para remover um offset da lista
+  //metdo para remover um offset da lista
   public boolean removeOffset(long offset) {
     return offsets.remove(offset);
   }

@@ -8,8 +8,8 @@ public class Venda implements Registro {
 
     private int id;
     private String cpfVendedor; //Chave fk para Vendedor
-    private String cpfCliente;  //chave fp para Cliente
-    private int[] idsCarros;    //array de IDs dos carros
+    private String cpfCliente;  //chave fk para Cliente
+    private int[] idsCarros;    //array de Ids dos carros
     private LocalDate data_venda;
     private float valor_total;
 

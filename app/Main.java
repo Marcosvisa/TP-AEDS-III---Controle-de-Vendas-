@@ -26,7 +26,7 @@ public class Main {
     public static void main(String[] args) {
         
         try {
-            // Iniciando DAOs
+            //iniciando daos
             vendedorDAO = new VendedorDAO();
             clienteDAO = new ClienteDAO();
             carroDAO = new CarroDAO();
@@ -201,7 +201,7 @@ public class Main {
         System.out.print("CPF: ");
         String cpf = sc.nextLine();
         
-        // Verifica se já existe algum vendedor com este CPF
+        //verifica se já existe algum vendedor com este CPF
         if (buscarVendedorPorCpf(cpf) != null) {
             System.out.println("Já existe um vendedor com este CPF!");
             return;
@@ -339,7 +339,7 @@ public class Main {
         System.out.print("CPF: ");
         String cpf = sc.nextLine();
         
-        // Verifica se já existe algum cliente com este CPF
+        //verifica se já existe algum cliente com este CPF
         if (buscarClientePorCpf(cpf) != null) {
             System.out.println("Já existe um cliente com este CPF!");
             return;
@@ -650,7 +650,7 @@ public class Main {
         float valorTotal = 0f;
         int[] idsCarros = new int[0];
         
-        // Lê CPF vendedor
+        // le CPF vendedor
         do {
             System.out.print("CPF do Vendedor: ");
             cpfVendedor = sc.nextLine();
@@ -661,7 +661,7 @@ public class Main {
             }
         } while (cpfVendedor.isEmpty());
         
-        // Lê CPF cliente
+        //le CPF cliente
         do {
             System.out.print("CPF do Cliente: ");
             cpfCliente = sc.nextLine();
@@ -672,7 +672,7 @@ public class Main {
             }
         } while (cpfCliente.isEmpty());
 
-        // Coleta os IDs dos carros que estarão na venda
+        //coleta os IDs dos carros que estarão na venda
         System.out.print("IDs dos Carros (separados por vírgula e sem espaços, ex: 1,3,5): ");
         String idsStr = sc.nextLine();
         String[] idsArrayStr = idsStr.split(",");
@@ -704,27 +704,27 @@ public class Main {
 
         System.out.println("Valor total calculado: R$ " + valorTotal);
 
-        // Data da Venda
+        //data da Venda
         LocalDate dataVenda = lerData("Data da Venda (ou deixe em branco para hoje)");
         if (dataVenda == null) dataVenda = LocalDate.now();
         
-        // Cria o objeto venda
+        //cria o objeto venda
         Venda novaVenda = new Venda(0, cpfVendedor, cpfCliente, idsCarros, dataVenda, valorTotal);
    
-        // Cria a venda e obtém o offset
+        //cria a venda e obtém o offset
         long offsetVenda = vendaDAO.createWithOffset(novaVenda);
         int novoId = novaVenda.getId();
 
-        // Atualiza índices
+        //atualiza índices
         indiceVendedorVendas.addVenda(cpfVendedor, offsetVenda);
         indiceClienteVendas.addVenda(cpfCliente, offsetVenda);
         
-        // Atualiza índice carro-venda
+        //atualiza índice carro-venda
         for (int idCarro : idsCarros) {
             indiceCarroVenda.addVendaToCarro(idCarro, novoId);
         }
         
-        // Atualizar número de vendas e faturamento do vendedor
+        //atualizar número de vendas e faturamento do vendedor
         Vendedor vendedorAtualizado = buscarVendedorPorCpf(cpfVendedor);
         if (vendedorAtualizado != null) {
             vendedorAtualizado.setNumero_vendas(vendedorAtualizado.getNumero_vendas() + 1);
