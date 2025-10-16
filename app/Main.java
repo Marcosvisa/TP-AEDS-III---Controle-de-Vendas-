@@ -1,19 +1,24 @@
 package app;
-import java.util.Scanner;
+
+import dao.*;
+import model.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import model.*;
-import dao.*;
+import java.util.List;
+import java.util.Scanner;
 
 public class Main {
+   
     private static Scanner sc = new Scanner(System.in);
     private static final DateTimeFormatter DF = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-    
-    // DAOs atualizados
+    private static IndiceVendedorVendas indiceVendedorVendas;
+    private static IndiceClienteVendas indiceClienteVendas;
     private static VendedorDAO vendedorDAO;
+    private static CarroVendaDAO carroVendaDAO;
+    private static IndiceCarroVenda indiceCarroVenda;
     private static ClienteDAO clienteDAO;
     private static CarroDAO carroDAO;
     private static VendaDAO vendaDAO;
@@ -21,12 +26,16 @@ public class Main {
     public static void main(String[] args) {
         
         try {
-            // Inicializa todos os DAOs
+            // Iniciando DAOs
             vendedorDAO = new VendedorDAO();
             clienteDAO = new ClienteDAO();
             carroDAO = new CarroDAO();
             vendaDAO = new VendaDAO();
-            
+            carroVendaDAO = new CarroVendaDAO(); 
+            indiceCarroVenda = new IndiceCarroVenda();
+            indiceVendedorVendas = new IndiceVendedorVendas();
+            indiceClienteVendas = new IndiceClienteVendas();
+
             int opcao = -1;
 
             do {
@@ -47,7 +56,7 @@ public class Main {
                             gerenciarVendas();
                             break;
                         case 0:
-                            System.out.println("Saindo do sistema. Adeus!");
+                            System.out.println("Saindo do sistema.");
                             break;
                         default:
                             System.out.println("Opção inválida. Tente novamente.");
@@ -66,6 +75,9 @@ public class Main {
             clienteDAO.close();
             carroDAO.close();
             vendaDAO.close();
+            indiceVendedorVendas.close();
+            indiceClienteVendas.close();
+            indiceCarroVenda.close();
 
         } catch (Exception e) {
             System.err.println("Erro fatal ao inicializar o sistema: " + e.getMessage());
@@ -189,7 +201,7 @@ public class Main {
         System.out.print("CPF: ");
         String cpf = sc.nextLine();
         
-        // Verifica se já existe vendedor com este CPF
+        // Verifica se já existe algum vendedor com este CPF
         if (buscarVendedorPorCpf(cpf) != null) {
             System.out.println("Já existe um vendedor com este CPF!");
             return;
@@ -327,7 +339,7 @@ public class Main {
         System.out.print("CPF: ");
         String cpf = sc.nextLine();
         
-        // Verifica se já existe cliente com este CPF
+        // Verifica se já existe algum cliente com este CPF
         if (buscarClientePorCpf(cpf) != null) {
             System.out.println("Já existe um cliente com este CPF!");
             return;
@@ -507,7 +519,9 @@ public class Main {
             } else {
                 System.out.println("Carro com ID " + id + " não encontrado.");
             }
-        } catch (NumberFormatException e) { System.out.println("ID inválido."); }
+        } catch (NumberFormatException e) { 
+            System.out.println("ID inválido."); 
+        }
     }
 
     private static void listarTodosCarros() throws Exception {
@@ -571,7 +585,9 @@ public class Main {
             } else {
                 System.out.println("Carro com ID " + id + " não encontrado.");
             }
-        } catch (NumberFormatException e) { System.out.println("ID inválido."); }
+        } catch (NumberFormatException e) { 
+            System.out.println("ID inválido."); 
+        }
     }
     
     private static void excluirCarro() throws Exception {
@@ -584,7 +600,9 @@ public class Main {
             } else {
                 System.out.println("Carro com ID " + id + " não encontrado.");
             }
-        } catch (NumberFormatException e) { System.out.println("ID inválido."); }
+        } catch (NumberFormatException e) { 
+            System.out.println("ID inválido."); 
+        }
     }
 
     // ======================================================================
@@ -632,7 +650,7 @@ public class Main {
         float valorTotal = 0f;
         int[] idsCarros = new int[0];
         
-        // 1. CPF Vendedor
+        // Lê CPF vendedor
         do {
             System.out.print("CPF do Vendedor: ");
             cpfVendedor = sc.nextLine();
@@ -643,7 +661,7 @@ public class Main {
             }
         } while (cpfVendedor.isEmpty());
         
-        // 2. CPF Cliente
+        // Lê CPF cliente
         do {
             System.out.print("CPF do Cliente: ");
             cpfCliente = sc.nextLine();
@@ -654,7 +672,7 @@ public class Main {
             }
         } while (cpfCliente.isEmpty());
 
-        // 3. IDs Carros e Cálculo do Valor Total
+        // Coleta os IDs dos carros que estarão na venda
         System.out.print("IDs dos Carros (separados por vírgula e sem espaços, ex: 1,3,5): ");
         String idsStr = sc.nextLine();
         String[] idsArrayStr = idsStr.split(",");
@@ -686,13 +704,25 @@ public class Main {
 
         System.out.println("Valor total calculado: R$ " + valorTotal);
 
-        // 4. Data da Venda
+        // Data da Venda
         LocalDate dataVenda = lerData("Data da Venda (ou deixe em branco para hoje)");
         if (dataVenda == null) dataVenda = LocalDate.now();
         
-        // 5. Criação do Objeto
+        // Cria o objeto venda
         Venda novaVenda = new Venda(0, cpfVendedor, cpfCliente, idsCarros, dataVenda, valorTotal);
-        int novoId = vendaDAO.create(novaVenda);
+   
+        // Cria a venda e obtém o offset
+        long offsetVenda = vendaDAO.createWithOffset(novaVenda);
+        int novoId = novaVenda.getId();
+
+        // Atualiza índices
+        indiceVendedorVendas.addVenda(cpfVendedor, offsetVenda);
+        indiceClienteVendas.addVenda(cpfCliente, offsetVenda);
+        
+        // Atualiza índice carro-venda
+        for (int idCarro : idsCarros) {
+            indiceCarroVenda.addVendaToCarro(idCarro, novoId);
+        }
         
         // Atualizar número de vendas e faturamento do vendedor
         Vendedor vendedorAtualizado = buscarVendedorPorCpf(cpfVendedor);
@@ -716,7 +746,9 @@ public class Main {
             } else {
                 System.out.println("Venda com ID " + id + " não encontrada.");
             }
-        } catch (NumberFormatException e) { System.out.println("ID inválido."); }
+        } catch (NumberFormatException e) { 
+            System.out.println("ID inválido."); 
+        }
     }
 
     private static void listarTodasVendas() throws Exception {
@@ -777,7 +809,9 @@ public class Main {
             } else {
                 System.out.println("Venda com ID " + id + " não encontrada.");
             }
-        } catch (NumberFormatException e) { System.out.println("ID inválido."); }
+        } catch (NumberFormatException e) { 
+            System.out.println("ID inválido."); 
+        }
     }
 
     private static void excluirVenda() throws Exception {
@@ -790,6 +824,9 @@ public class Main {
             } else {
                 System.out.println("Venda com ID " + id + " não encontrada.");
             }
-        } catch (NumberFormatException e) { System.out.println("ID inválido."); }
+        } catch (NumberFormatException e) { 
+            System.out.println("ID inválido."); 
+        }
     }
-}
+
+            }

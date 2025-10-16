@@ -484,4 +484,13 @@ public class HashExtensivel<T extends RegistroHashExtensivel<T>> {
       e.printStackTrace();
     }
   }
+
+  public void close() throws IOException {
+    if (arqDiretorio != null) {
+        arqDiretorio.close();
+    }
+    if (arqCestos != null) {
+        arqCestos.close();
+    }
+}
 }

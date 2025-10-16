@@ -26,7 +26,7 @@ public class Arquivo<T extends Registro> {
         this.arquivo = new RandomAccessFile(this.nomeArquivo, "rw");
 
         if (this.arquivo.length() < 4)
-            this.arquivo.writeInt(0); // cabeçalho com último ID
+            this.arquivo.writeInt(0); //cabeçalho com último id
     }
 
     public int create(T obj) throws Exception {
@@ -39,7 +39,7 @@ public class Arquivo<T extends Registro> {
 
         arquivo.seek(arquivo.length());
         byte[] ba = obj.toByteArray();
-        arquivo.writeChar(' '); // lápide ativa
+        arquivo.writeChar(' '); //lápide ativa
         arquivo.writeInt(ba.length);
         arquivo.write(ba);
         return novoID;
@@ -63,7 +63,7 @@ public class Arquivo<T extends Registro> {
         return null;
     }
 
-    // Método adicional para buscar por CPF (String)
+    //buscar cpf
     public T readByCpf(String cpf) throws Exception {
         arquivo.seek(4);
         while (arquivo.getFilePointer() < arquivo.length()) {
@@ -76,7 +76,6 @@ public class Arquivo<T extends Registro> {
                 T obj = construtor.newInstance();
                 obj.fromByteArray(ba);
                 
-                // Usa reflection para verificar se o objeto tem método getCpf()
                 try {
                     java.lang.reflect.Method getCpfMethod = obj.getClass().getMethod("getCpf");
                     String objCpf = (String) getCpfMethod.invoke(obj);
@@ -84,7 +83,7 @@ public class Arquivo<T extends Registro> {
                         return obj;
                     }
                 } catch (Exception e) {
-                    // Se não tiver método getCpf, continua a busca
+
                 }
             }
         }
@@ -131,7 +130,7 @@ public class Arquivo<T extends Registro> {
         return false;
     }
 
-    // Método adicional para deletar por CPF
+    //deletar cpf
     public boolean deleteByCpf(String cpf) throws Exception {
         arquivo.seek(4);
         while (arquivo.getFilePointer() < arquivo.length()) {
@@ -154,7 +153,7 @@ public class Arquivo<T extends Registro> {
                         return true;
                     }
                 } catch (Exception e) {
-                    // Se não tiver método getCpf, continua a busca
+                
                 }
             }
         }
@@ -198,21 +197,37 @@ public class Arquivo<T extends Registro> {
     }
 
     public long createWithOffset(T obj) throws Exception {
-        arquivo.seek(0);
-        int ultimoID = arquivo.readInt();
-        int novoID = ultimoID + 1;
-        arquivo.seek(0);
-        arquivo.writeInt(novoID);
-        obj.setId(novoID);
+    arquivo.seek(0);
+    int ultimoID = arquivo.readInt();
+    int novoID = ultimoID + 1;
+    arquivo.seek(0);
+    arquivo.writeInt(novoID);
+    obj.setId(novoID);
 
-        arquivo.seek(arquivo.length());
-        long offset = arquivo.getFilePointer();
-        
-        byte[] ba = obj.toByteArray();
-        arquivo.writeChar(' '); 
-        arquivo.writeInt(ba.length);
-        arquivo.write(ba);
-        
-        return offset;
+    arquivo.seek(arquivo.length());
+    long offset = arquivo.getFilePointer();
+    
+    byte[] ba = obj.toByteArray();
+    arquivo.writeChar(' '); 
+    arquivo.writeInt(ba.length);
+    arquivo.write(ba);
+    
+    return offset;
+}
+
+public T readByOffset(long offset) throws Exception {
+    arquivo.seek(offset); //vai direto para o offset
+    
+    char lapide = arquivo.readChar();
+    int tam = arquivo.readInt();
+    byte[] ba = new byte[tam];
+    arquivo.read(ba);
+
+    if (lapide == ' ') {
+        T obj = construtor.newInstance();
+        obj.fromByteArray(ba);
+        return obj;
     }
+    return null; //registro excluído
+}
 }

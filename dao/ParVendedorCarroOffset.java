@@ -5,9 +5,9 @@ import util.RegistroHashExtensivel;
 
 public class ParVendedorCarroOffset implements RegistroHashExtensivel<ParVendedorCarroOffset> {
 
-  private int idVendedor; // A chave: ID do Vendedor
-  private long offset;   // O offset do registro Carro no arquivo de dados
-  private short TAMANHO = 12; // int (4 bytes) + long (8 bytes)
+  private int idVendedor; //chave: ID do Vendedor
+  private long offset;   //o offset do registro Carro no arquivo de dados
+  private short TAMANHO = 12; //int (4 bytes) + long (8 bytes)
 
   public ParVendedorCarroOffset() {
     this(-1, -1L);
@@ -33,18 +33,18 @@ public class ParVendedorCarroOffset implements RegistroHashExtensivel<ParVendedo
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     DataOutputStream dos = new DataOutputStream(baos);
     
-    // Escreve os dados
+    //escreve os dados
     dos.writeInt(idVendedor);
     dos.writeLong(offset);
     dos.flush();
     
     byte[] bs = baos.toByteArray();
     
-    // Preenche com bytes para garantir o tamanho FIXO TAMANHO (12)
+    //preenche com bytes para garantir o tamanho FIXO TAMANHO (12)
     byte[] bs2 = new byte[TAMANHO];
-    // Copia os bytes reais (12 bytes)
+    //copia os bytes reais (12 bytes)
     System.arraycopy(bs, 0, bs2, 0, bs.length);
-    // Não é necessário preencher o restante, pois int+long já é 12 bytes
+    //não é necessário preencher o restante, pois int+long já é 12 bytes
     
     return bs2;
   }

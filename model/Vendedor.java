@@ -6,7 +6,7 @@ import util.Registro;
 
 public class Vendedor implements Registro {
 
-    private String cpf; // Agora o CPF é o ID
+    private String cpf; //cpf pk
     private String nome;
     private String[] email;
     private LocalDate data_contratacao;
@@ -31,19 +31,17 @@ public class Vendedor implements Registro {
         this.faturamento = faturamento;
     }
 
-    // ---------------- Métodos da interface Registro ----------------
+  
 
     @Override
     public int getId() {
-        // Como a interface exige int, mas temos String (CPF), 
-        // vamos usar o hashCode do CPF como ID numérico
+
         return Math.abs(cpf.hashCode());
     }
 
     @Override
     public void setId(int id) {
-        // Não podemos converter int para CPF, então este método fica vazio
-        // O CPF deve ser definido via setter
+    
     }
 
     @Override
@@ -81,7 +79,6 @@ public class Vendedor implements Registro {
         faturamento = dis.readFloat();
     }
 
-    // ---------------- Getters e Setters ----------------
 
     public String getCpf() { return cpf; }
     public void setCpf(String cpf) { this.cpf = cpf; }

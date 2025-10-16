@@ -11,7 +11,7 @@ public class Carro implements Registro {
     private String[] cores;
     private LocalDate data_fabricacao;
     private float preco;
-    // REMOVER: private int id_vendedor; // Este campo não deveria existir aqui
+  
 
     public Carro() {
         this.id = 0;
@@ -19,17 +19,15 @@ public class Carro implements Registro {
         this.cores = new String[0];
         this.data_fabricacao = LocalDate.now();
         this.preco = 0f;
-        // REMOVER: this.id_vendedor=0;
     }
 
-    // Construtor corrigido - REMOVER id_vendedor
+ 
     public Carro(int id, String modelo, String[] cores, LocalDate data_fabricacao, float preco) {
         this.id = id;
         this.modelo = modelo;
         this.cores = cores;
         this.data_fabricacao = data_fabricacao;
         this.preco = preco;
-        // REMOVER: this.id_vendedor=id_vendedor;
     }
 
     @Override
@@ -49,7 +47,6 @@ public class Carro implements Registro {
         for (String c : cores) dos.writeUTF(c);
         dos.writeUTF(data_fabricacao.toString());
         dos.writeFloat(preco);
-        // REMOVER: dos.writeInt(id_vendedor);
         return baos.toByteArray();
     }
 
@@ -67,7 +64,7 @@ public class Carro implements Registro {
 
         data_fabricacao = LocalDate.parse(dis.readUTF());
         preco = dis.readFloat();
-        // REMOVER: id_vendedor = dis.readInt();
+
     }
 
     public String getModelo() { return modelo; }
@@ -78,7 +75,7 @@ public class Carro implements Registro {
     public void setData_fabricacao(LocalDate data_fabricacao) { this.data_fabricacao = data_fabricacao; }
     public float getPreco() { return preco; }
     public void setPreco(float preco) { this.preco = preco; }
-    // REMOVER os métodos getid_vendedor e setid_vendedor
+
 
     @Override
     public String toString() {
@@ -90,7 +87,6 @@ public class Carro implements Registro {
         for (String c : cores) sb.append(c).append(" ");
         sb.append("\nData de fabricação: ").append(data_fabricacao.format(df));
         sb.append("\nPreço: R$ ").append(preco);
-        // REMOVER: sb.append("\nId_vendedor: ").append(id_vendedor);
         return sb.toString();
     }
 }

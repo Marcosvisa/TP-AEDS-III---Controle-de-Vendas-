@@ -7,9 +7,9 @@ import util.Registro;
 public class Venda implements Registro {
 
     private int id;
-    private String cpfVendedor; // Chave estrangeira para Vendedor
-    private String cpfCliente;  // Chave estrangeira para Cliente
-    private int[] idsCarros;    // Array de IDs dos carros vendidos
+    private String cpfVendedor; //Chave fk para Vendedor
+    private String cpfCliente;  //chave fp para Cliente
+    private int[] idsCarros;    //array de IDs dos carros
     private LocalDate data_venda;
     private float valor_total;
 

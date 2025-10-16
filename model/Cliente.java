@@ -6,7 +6,7 @@ import util.Registro;
 
 public class Cliente implements Registro {
 
-    private String cpf; // CPF como ID
+    private String cpf; //CPF como pk
     private String nome;
     private String[] email;
     private LocalDate data_cadastro;
@@ -35,7 +35,7 @@ public class Cliente implements Registro {
 
     @Override
     public void setId(int id) {
-        // Não implementado - CPF deve ser definido via setter
+
     }
 
     @Override
