@@ -16,7 +16,7 @@ projeto/
 ├── model/         # Entidades (Cliente, Vendedor, Carro, Venda)
 ├── dao/           # Camada de acesso a dados
 ├── util/          # Utilitários
-└── dados/         # Arquivos de dados (gerados automaticamente)
+└── dados/         # Arquivos de dados binários (gerados automaticamente)
 ```
 
 ## 🚀 Compilação e Execução
