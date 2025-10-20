@@ -15,7 +15,7 @@ projeto/
 ├── app/           # Aplicação principal
 ├── model/         # Entidades (Cliente, Vendedor, Carro, Venda)
 ├── dao/           # Camada de acesso a dados
-├── util/          # Interfaces e utilitários
+├── util/          # Utilitários
 └── dados/         # Arquivos de dados (gerados automaticamente)
 ```
 
