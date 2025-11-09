@@ -55,6 +55,9 @@ public class Main {
                         case 4:
                             gerenciarVendas();
                             break;
+                        case 5: 
+                            gerenciarRelacoesCarroVenda(); 
+                            break;
                         case 0:
                             System.out.println("Saindo do sistema.");
                             break;
@@ -93,6 +96,7 @@ public class Main {
         System.out.println("2 - Gerenciar Clientes");
         System.out.println("3 - Gerenciar Carros");
         System.out.println("4 - Gerenciar Vendas");
+        System.out.println("5 - Gerenciar Relações Carro-Venda (N:N)");
         System.out.println("0 - Sair");
         System.out.print("Escolha uma opção: ");
     }
@@ -828,5 +832,146 @@ public class Main {
             System.out.println("ID inválido."); 
         }
     }
+    private static void gerenciarRelacoesCarroVenda() throws Exception {
+    int subOpcao = -1;
+    do {
+        System.out.println("\n----- Gerenciar Relações Carro-Venda (N:N) -----");
+        System.out.println("1 - Adicionar Relação (Carro na Venda)");
+        System.out.println("2 - Remover Relação (Carro da Venda)");
+        System.out.println("3 - Consultar Carros de uma Venda");
+        System.out.println("4 - Consultar Vendas de um Carro");
+        System.out.println("5 - Listar Todas as Relações");
+        System.out.println("0 - Voltar ao Menu Principal");
+        System.out.print("Escolha uma opção: ");
+
+        try {
+            subOpcao = Integer.parseInt(sc.nextLine());
+            switch (subOpcao) {
+                case 1: adicionarRelacaoCarroVenda(); break;
+                case 2: removerRelacaoCarroVenda(); break;
+                case 3: consultarCarrosPorVenda(); break;
+                case 4: consultarVendasPorCarro(); break;
+                case 5: listarTodasRelacoesCarroVenda(); break;
+                case 0: System.out.println("Voltando..."); break;
+                default: System.out.println("Opção inválida.");
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Entrada inválida.");
+        }
+    } while (subOpcao != 0);
+}
+
+private static void adicionarRelacaoCarroVenda() throws Exception {
+    System.out.println("\n-- Adicionar Carro à Venda --");
+    
+    System.out.print("ID do Carro: ");
+    int idCarro = Integer.parseInt(sc.nextLine());
+    
+    System.out.print("ID da Venda: ");
+    int idVenda = Integer.parseInt(sc.nextLine());
+    
+    Carro carro = carroDAO.read(idCarro);
+    Venda venda = vendaDAO.read(idVenda);
+    
+    if (carro == null) {
+        System.out.println("Carro com ID " + idCarro + " não encontrado!");
+        return;
+    }
+    if (venda == null) {
+        System.out.println("Venda com ID " + idVenda + " não encontrada!");
+        return;
+    }
+    
+    try {
+        carroVendaDAO.create(idCarro, idVenda);
+    
+        indiceCarroVenda.addVendaToCarro(idCarro, idVenda);
+        
+        System.out.println("Carro adicionado à venda com sucesso!");
+    } catch (Exception e) {
+        System.out.println("Erro: " + e.getMessage());
+    }
+}
+
+private static void removerRelacaoCarroVenda() throws Exception {
+    System.out.println("\n-- Remover Carro da Venda --");
+    
+    System.out.print("ID do Carro: ");
+    int idCarro = Integer.parseInt(sc.nextLine());
+    
+    System.out.print("ID da Venda: ");
+    int idVenda = Integer.parseInt(sc.nextLine());
+    
+    if (carroVendaDAO.delete(idCarro, idVenda)) {
+        
+        System.out.println("Relação removida com sucesso!");
+    } else {
+        System.out.println("Relação não encontrada!");
+    }
+}
+
+// consulta carros por venda
+private static void consultarCarrosPorVenda() throws Exception {
+    System.out.println("\n-- Consultar Carros da Venda --");
+    System.out.print("ID da Venda: ");
+    int idVenda = Integer.parseInt(sc.nextLine());
+    
+    //consulta pela b++
+    List<Integer> idsCarros = indiceCarroVenda.getCarrosPorVenda(idVenda);
+    
+    if (idsCarros.isEmpty()) {
+        System.out.println("Nenhum carro encontrado para esta venda.");
+    } else {
+        System.out.println("Carros na venda " + idVenda + ":");
+        for (int idCarro : idsCarros) {
+            Carro carro = carroDAO.read(idCarro);
+            if (carro != null) {
+                System.out.println(" - " + carro.getModelo() + " (ID: " + idCarro + ")");
+            }
+        }
+    }
+}
+
+//consultar vendas por carro
+private static void consultarVendasPorCarro() throws Exception {
+    System.out.println("\n-- Consultar Vendas do Carro --");
+    System.out.print("ID do Carro: ");
+    int idCarro = Integer.parseInt(sc.nextLine());
+    
+
+    List<Integer> idsVendas = indiceCarroVenda.getVendasPorCarro(idCarro);
+    
+    if (idsVendas.isEmpty()) {
+        System.out.println("Nenhuma venda encontrada para este carro.");
+    } else {
+        System.out.println("Vendas do carro " + idCarro + ":");
+        for (int idVenda : idsVendas) {
+            Venda venda = vendaDAO.read(idVenda);
+            if (venda != null) {
+                System.out.println(" - Venda ID: " + idVenda + " (R$ " + venda.getValor_total() + ")");
+            }
+        }
+    }
+}
+
+// lista todas as relacoes
+private static void listarTodasRelacoesCarroVenda() throws Exception {
+    System.out.println("\n-- Todas as Relações Carro-Venda --");
+    ArrayList<CarroVenda> relacoes = carroVendaDAO.readAll();
+    
+    if (relacoes.isEmpty()) {
+        System.out.println("Nenhuma relação cadastrada.");
+    } else {
+        for (CarroVenda cv : relacoes) {
+            Carro carro = carroDAO.read(cv.getIdCarro());
+            Venda venda = vendaDAO.read(cv.getIdVenda());
+            
+            String nomeCarro = (carro != null) ? carro.getModelo() : "CARRO NÃO ENCONTRADO";
+            String infoVenda = (venda != null) ? "Venda #" + cv.getIdVenda() : "VENDA NÃO ENCONTRADA";
+            
+            System.out.println("Carro: " + nomeCarro + " (ID: " + cv.getIdCarro() + ") ↔ " + infoVenda);
+        }
+    }
+}
 
             }
