@@ -23,7 +23,7 @@ projeto/
 
 ### Compilar o projeto:
 ```bash
-javac -cp . dao/BPlusTreeCarroVenda.java dao/IndiceCarroVenda.java app/Main.java
+javac -cp . util/*.java model/*.java dao/*.java app/Main.java
 ```
 
 ### Executar o sistema:
