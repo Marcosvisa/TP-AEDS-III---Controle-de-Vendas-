@@ -1,4 +1,4 @@
-# 🚗 Sistema de Gerenciamento de Concessionária
+# 🚗 Sistema de Gerenciamento de Vendas de Concessionária
 
 Sistema para gerenciamento de concessionária com persistência em arquivos binários, hashing extensível e arvore B+. Ainda sem interface gráfica implementada.
 

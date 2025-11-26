@@ -25,7 +25,7 @@ public class CarroVenda implements Registro {
     
     @Override
     public void setId(int id) {
-        // Não aplicável para PK composta
+
     }
     
     // Método para verificar igualdade baseada na PK composta

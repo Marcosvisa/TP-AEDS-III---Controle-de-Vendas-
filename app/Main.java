@@ -2,6 +2,11 @@ package app;
 
 import dao.*;
 import model.*;
+import util.Compressor;
+import util.CompressorHuffman;
+import util.CompressorLZW;
+
+import java.io.File;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -36,6 +41,11 @@ public class Main {
             indiceVendedorVendas = new IndiceVendedorVendas();
             indiceClienteVendas = new IndiceClienteVendas();
 
+
+             if (!fazerLogin()) {
+            System.out.println("Login falhou ou cancelado. Saindo do sistema.");
+            return;
+             }
             int opcao = -1;
 
             do {
@@ -58,6 +68,10 @@ public class Main {
                         case 5: 
                             gerenciarRelacoesCarroVenda(); 
                             break;
+
+                        case 6: 
+                            gerenciarCompressao(); 
+                            break;
                         case 0:
                             System.out.println("Saindo do sistema.");
                             break;
@@ -73,7 +87,7 @@ public class Main {
                 }
             } while (opcao != 0);
             
-            // Fecha os arquivos ao sair
+            //fecha os arquivos ao sair
             vendedorDAO.close();
             clienteDAO.close();
             carroDAO.close();
@@ -97,6 +111,7 @@ public class Main {
         System.out.println("3 - Gerenciar Carros");
         System.out.println("4 - Gerenciar Vendas");
         System.out.println("5 - Gerenciar Relações Carro-Venda (N:N)");
+        System.out.println("6 - Compressão de Arquivos"); 
         System.out.println("0 - Sair");
         System.out.print("Escolha uma opção: ");
     }
@@ -118,9 +133,8 @@ public class Main {
         return data;
     }
 
-    // ======================================================================
     // MÉTODOS AUXILIARES PARA BUSCA POR CPF
-    // ======================================================================
+    // ================================================
 
     private static Vendedor buscarVendedorPorCpf(String cpf) throws Exception {
         ArrayList<Vendedor> vendedores = vendedorDAO.readAll();
@@ -162,19 +176,19 @@ public class Main {
         return false;
     }
 
-    // ======================================================================
+
     // MÉTODOS DE GERENCIAMENTO DE VENDEDORES 
-    // ======================================================================
+    // ==================================================
 
     private static void gerenciarVendedores() throws Exception {
         int subOpcao = -1;
         do {
             System.out.println("\n----- Gerenciar Vendedores -----");
-            System.out.println("1 - Incluir Vendedor (Create)");
-            System.out.println("2 - Buscar Vendedor por CPF (Read)");
-            System.out.println("3 - Listar Todos os Vendedores (Read All)");
-            System.out.println("4 - Atualizar Vendedor (Update)");
-            System.out.println("5 - Excluir Vendedor (Delete)");
+            System.out.println("1 - Incluir Vendedor");
+            System.out.println("2 - Buscar Vendedor por CPF");
+            System.out.println("3 - Listar Todos os Vendedores");
+            System.out.println("4 - Atualizar Vendedor");
+            System.out.println("5 - Excluir Vendedor");
             System.out.println("0 - Voltar ao Menu Principal");
             System.out.print("Escolha uma opção: ");
 
@@ -200,33 +214,37 @@ public class Main {
     }
     
     private static void incluirVendedor() throws Exception {
-        System.out.println("\n-- Inclusão de Novo Vendedor --");
-        
-        System.out.print("CPF: ");
-        String cpf = sc.nextLine();
-        
-        //verifica se já existe algum vendedor com este CPF
-        if (buscarVendedorPorCpf(cpf) != null) {
-            System.out.println("Já existe um vendedor com este CPF!");
-            return;
-        }
-        
-        System.out.print("Nome: ");
-        String nome = sc.nextLine();
-        
-        System.out.print("Emails (separados por vírgula): ");
-        String[] emails = sc.nextLine().split(",");
-        for (int i = 0; i < emails.length; i++) {
-            emails[i] = emails[i].trim();
-        }
-        
-        LocalDate dataContratacao = lerData("Data de contratação (ou deixe em branco para hoje)");
-        if (dataContratacao == null) dataContratacao = LocalDate.now();
-        
-        Vendedor novoVendedor = new Vendedor(cpf, nome, emails, dataContratacao, 0, 0f);
-        vendedorDAO.create(novoVendedor);
-        System.out.println("Vendedor incluído com sucesso! CPF: " + cpf);
+    System.out.println("\n-- Inclusão de Novo Vendedor --");
+    
+    System.out.print("CPF: ");
+    String cpf = sc.nextLine();
+    
+    //verifica se já existe algum vendedor com este CPF
+    if (buscarVendedorPorCpf(cpf) != null) {
+        System.out.println("Já existe um vendedor com este CPF!");
+        return;
     }
+    
+    System.out.print("Nome: ");
+    String nome = sc.nextLine();
+    
+    System.out.print("Emails (separados por vírgula): ");
+    String[] emails = sc.nextLine().split(",");
+    for (int i = 0; i < emails.length; i++) {
+        emails[i] = emails[i].trim();
+    }
+    
+    System.out.print("Senha: "); //solicita senha
+    String senha = sc.nextLine();
+    
+    LocalDate dataContratacao = lerData("Data de contratação (ou deixe em branco para hoje)");
+    if (dataContratacao == null) dataContratacao = LocalDate.now();
+    
+    // inclui a senha no construtor
+    Vendedor novoVendedor = new Vendedor(cpf, nome, emails, dataContratacao, 0, 0f, senha);
+    vendedorDAO.create(novoVendedor);
+    System.out.println("Vendedor incluído com sucesso! CPF: " + cpf);
+}
 
     private static void buscarVendedor() throws Exception {
         System.out.println("\n-- Busca de Vendedor --");
@@ -254,39 +272,46 @@ public class Main {
     }
 
     private static void atualizarVendedor() throws Exception {
-        System.out.println("\n-- Atualização de Vendedor --");
-        System.out.print("CPF do Vendedor a atualizar: ");
-        String cpf = sc.nextLine();
-        
-        Vendedor vendedor = buscarVendedorPorCpf(cpf);
-        if (vendedor != null) {
-            System.out.println("Vendedor atual: " + vendedor.toString());
+    System.out.println("\n-- Atualização de Vendedor --");
+    System.out.print("CPF do Vendedor a atualizar: ");
+    String cpf = sc.nextLine();
+    
+    Vendedor vendedor = buscarVendedorPorCpf(cpf);
+    if (vendedor != null) {
+        System.out.println("Vendedor atual: " + vendedor.toString());
 
-            System.out.print("Novo Nome (deixe em branco para manter '" + vendedor.getNome() + "'): ");
-            String novoNome = sc.nextLine();
-            if (!novoNome.trim().isEmpty()) {
-                vendedor.setNome(novoNome);
-            }
-
-            System.out.print("Novos Emails (separados por vírgula, deixe em branco para manter): ");
-            String novosEmailsStr = sc.nextLine();
-            if (!novosEmailsStr.trim().isEmpty()) {
-                String[] novosEmails = novosEmailsStr.split(",");
-                for (int i = 0; i < novosEmails.length; i++) {
-                    novosEmails[i] = novosEmails[i].trim();
-                }
-                vendedor.setEmail(novosEmails);
-            }
-
-            if (vendedorDAO.update(vendedor)) {
-                System.out.println("Vendedor atualizado com sucesso!");
-            } else {
-                System.out.println("Erro ao atualizar o vendedor.");
-            }
-        } else {
-            System.out.println("Vendedor com CPF " + cpf + " não encontrado.");
+        System.out.print("Novo Nome (deixe em branco para manter '" + vendedor.getNome() + "'): ");
+        String novoNome = sc.nextLine();
+        if (!novoNome.trim().isEmpty()) {
+            vendedor.setNome(novoNome);
         }
+
+        System.out.print("Novos Emails (separados por vírgula, deixe em branco para manter): ");
+        String novosEmailsStr = sc.nextLine();
+        if (!novosEmailsStr.trim().isEmpty()) {
+            String[] novosEmails = novosEmailsStr.split(",");
+            for (int i = 0; i < novosEmails.length; i++) {
+                novosEmails[i] = novosEmails[i].trim();
+            }
+            vendedor.setEmail(novosEmails);
+        }
+
+        // NOVO: opção para alterar senha
+        System.out.print("Nova Senha (deixe em branco para manter a atual): ");
+        String novaSenha = sc.nextLine();
+        if (!novaSenha.trim().isEmpty()) {
+            vendedor.setSenha(novaSenha);
+        }
+
+        if (vendedorDAO.update(vendedor)) {
+            System.out.println("Vendedor atualizado com sucesso!");
+        } else {
+            System.out.println("Erro ao atualizar o vendedor.");
+        }
+    } else {
+        System.out.println("Vendedor com CPF " + cpf + " não encontrado.");
     }
+}
     
     private static void excluirVendedor() throws Exception {
         System.out.println("\n-- Exclusão de Vendedor --");
@@ -308,11 +333,11 @@ public class Main {
         int subOpcao = -1;
         do {
             System.out.println("\n----- Gerenciar Clientes -----");
-            System.out.println("1 - Incluir Cliente (Create)");
-            System.out.println("2 - Buscar Cliente por CPF (Read)");
-            System.out.println("3 - Listar Todos os Clientes (Read All)");
-            System.out.println("4 - Atualizar Cliente (Update)");
-            System.out.println("5 - Excluir Cliente (Delete)");
+            System.out.println("1 - Incluir Cliente");
+            System.out.println("2 - Buscar Cliente por CPF");
+            System.out.println("3 - Listar Todos os Clientes");
+            System.out.println("4 - Atualizar Cliente");
+            System.out.println("5 - Excluir Cliente");
             System.out.println("0 - Voltar ao Menu Principal");
             System.out.print("Escolha uma opção: ");
 
@@ -455,11 +480,11 @@ public class Main {
         int subOpcao = -1;
         do {
             System.out.println("\n----- Gerenciar Carros -----");
-            System.out.println("1 - Incluir Carro (Create)");
-            System.out.println("2 - Buscar Carro por ID (Read)");
-            System.out.println("3 - Listar Todos os Carros (Read All)");
-            System.out.println("4 - Atualizar Carro (Update)");
-            System.out.println("5 - Excluir Carro (Delete)");
+            System.out.println("1 - Incluir Carro");
+            System.out.println("2 - Buscar Carro por ID");
+            System.out.println("3 - Listar Todos os Carros");
+            System.out.println("4 - Atualizar Carro");
+            System.out.println("5 - Excluir Carro");
             System.out.println("0 - Voltar ao Menu Principal");
             System.out.print("Escolha uma opção: ");
 
@@ -617,11 +642,11 @@ public class Main {
         int subOpcao = -1;
         do {
             System.out.println("\n----- Gerenciar Vendas -----");
-            System.out.println("1 - Registrar Nova Venda (Create)");
-            System.out.println("2 - Buscar Venda por ID (Read)");
-            System.out.println("3 - Listar Todas as Vendas (Read All)");
-            System.out.println("4 - Atualizar Venda (Update)");
-            System.out.println("5 - Excluir Venda (Delete)");
+            System.out.println("1 - Registrar Nova Venda");
+            System.out.println("2 - Buscar Venda por ID");
+            System.out.println("3 - Listar Todas as Venda");
+            System.out.println("4 - Atualizar Venda");
+            System.out.println("5 - Excluir Venda");
             System.out.println("0 - Voltar ao Menu Principal");
             System.out.print("Escolha uma opção: ");
 
@@ -972,6 +997,154 @@ private static void listarTodasRelacoesCarroVenda() throws Exception {
             System.out.println("Carro: " + nomeCarro + " (ID: " + cv.getIdCarro() + ") ↔ " + infoVenda);
         }
     }
+}
+////////// METODOS PARA COMPRESSAO ///////////////////////
+    private static void gerenciarCompressao() throws Exception {
+        int subOpcao = -1;
+        do {
+            System.out.println("\n----- Sistema de Compressão -----");
+            System.out.println("1 - Comprimir Arquivos (.db)");
+            System.out.println("2 - Descomprimir Arquivo");
+            System.out.println("3 - Voltar ao Menu Principal");
+            System.out.print("Escolha uma opção: ");
+            
+            try {
+                subOpcao = Integer.parseInt(sc.nextLine());
+                switch (subOpcao) {
+                    case 1: comprimirArquivos(); break;
+                    case 2: descomprimirArquivo(); break;
+                    case 3: System.out.println("Voltando..."); break;
+                    default: System.out.println("Opção inválida.");
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Entrada inválida.");
+            }
+        } while (subOpcao != 3);
+    }
+    
+    private static void comprimirArquivos() throws Exception {
+        System.out.println("\n-- Comprimir Arquivos --");
+        System.out.println("Escolha o método de compressão:");
+        System.out.println("1 - Huffman");
+        System.out.println("2 - LZW");
+        System.out.print("Opção: ");
+        
+        int metodo = Integer.parseInt(sc.nextLine());
+        Compressor compressor; 
+        
+        if (metodo == 1) {
+            compressor = new CompressorHuffman();
+        } else if (metodo == 2) {
+            compressor = new CompressorLZW();
+        } else {
+            System.out.println("Método inválido!");
+            return;
+        }
+        
+        // Lista todos os arquivos .db
+        String[] arquivosDB = {
+            "dados/clientes.db",
+            "dados/vendedores.db", 
+            "dados/carros.db",
+            "dados/vendas.db",
+            "dados/carro_venda.db",
+            "dados/carro_vendas_bptree.db",
+            "dados/vend_venda_d.hash_d.db",
+            "dados/vend_venda_c.hash_c.db",
+            "dados/cli_venda_d.hash_d.db",
+            "dados/cli_venda_c.hash_c.db"
+        };
+        
+        System.out.print("Nome do arquivo compactado (ex: backup.huf): ");
+        String arquivoSaida = sc.nextLine();
+        
+        compressor.comprimir(arquivosDB, arquivoSaida);
+        System.out.println("✅ Compressão concluída: " + arquivoSaida);
+    }
+    
+    private static void descomprimirArquivo() throws Exception {
+    System.out.println("\n-- Descomprimir Arquivo --");
+    System.out.print("Arquivo compactado: ");
+    String arquivoEntrada = sc.nextLine();
+    
+    System.out.print("Pasta de destino (ex: dados_restaurados): ");
+    String pastaSaida = sc.nextLine();
+    
+    // Cria pasta se não existir
+    new File(pastaSaida).mkdirs();
+    
+    // Pergunta qual método foi usado ou detecta pela extensão
+    Compressor compressor;
+    if (arquivoEntrada.endsWith(".huf")) {
+        compressor = new CompressorHuffman();
+    } else if (arquivoEntrada.endsWith(".lzw")) {
+        compressor = new CompressorLZW();
+    } else {
+        System.out.println("Não foi possível detectar o método de compressão.");
+        System.out.println("Usando Huffman como padrão...");
+        compressor = new CompressorHuffman();
+    }
+    
+    compressor.descomprimir(arquivoEntrada, pastaSaida);
+    System.out.println("✅ Descompressão concluída em: " + pastaSaida);
+}
+
+private static boolean fazerLogin() throws Exception {
+    int tentativa = 0;
+    final int MAX_TENTATIVAS = 3;
+    
+    while (tentativa < MAX_TENTATIVAS) {
+        System.out.println("\n========== SISTEMA DE VENDAS ==========");
+        System.out.println("1 - Login");
+        System.out.println("2 - Cadastrar novo vendedor");
+        System.out.println("0 - Sair");
+        System.out.print("Escolha uma opção: ");
+        
+        try {
+            int opcaoLogin = Integer.parseInt(sc.nextLine());
+            
+            switch (opcaoLogin) {
+                case 1:
+                    //login com CPF e senha
+                    System.out.print("CPF: ");
+                    String cpf = sc.nextLine();
+                    System.out.print("Senha: ");
+                    String senha = sc.nextLine();
+                    
+                    Vendedor vendedor = buscarVendedorPorCpf(cpf);
+                    if (vendedor != null && vendedor.getSenha().equals(senha)) {
+                        System.out.println("\n Logado");
+                        return true;
+                    } else {
+                        tentativa++;
+                        System.out.println("❌ CPF ou senha inválidos. Tentativas restantes: " + (MAX_TENTATIVAS - tentativa));
+                    }
+                    break;
+                    
+                case 2:
+                    // Cadastrar novo vendedor
+                    incluirVendedor();
+                    System.out.println("Agora faça login com suas credenciais.");
+                    break;
+                    
+                case 0:
+                    System.out.println("Saindo do sistema.");
+                    return false;
+                    
+                default:
+                    System.out.println("Opção inválida.");
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Entrada inválida. Digite um número.");
+        }
+        
+        if (tentativa >= MAX_TENTATIVAS) {
+            System.out.println("Número máximo de tentativas excedido. Sistema bloqueado.");
+            return false;
+        }
+    }
+    
+    return false;
 }
 
             }

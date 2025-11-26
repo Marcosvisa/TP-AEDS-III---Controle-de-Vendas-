@@ -5,13 +5,11 @@ import java.time.format.DateTimeFormatter;
 import util.Registro;
 
 public class Carro implements Registro {
-
     private int id;
     private String modelo;
     private String[] cores;
     private LocalDate data_fabricacao;
     private float preco;
-  
 
     public Carro() {
         this.id = 0;
@@ -21,7 +19,6 @@ public class Carro implements Registro {
         this.preco = 0f;
     }
 
- 
     public Carro(int id, String modelo, String[] cores, LocalDate data_fabricacao, float preco) {
         this.id = id;
         this.modelo = modelo;
@@ -42,11 +39,13 @@ public class Carro implements Registro {
         DataOutputStream dos = new DataOutputStream(baos);
 
         dos.writeInt(id);
-        dos.writeUTF(modelo);
+        dos.writeUTF(modelo); // ⭐ AGORA SEM CRIPTOGRAFIA
+        
         dos.writeInt(cores.length);
         for (String c : cores) dos.writeUTF(c);
-        dos.writeUTF(data_fabricacao.toString());
+        dos.writeLong(data_fabricacao.toEpochDay()); // ⭐ MELHOR: usa epoch day
         dos.writeFloat(preco);
+        
         return baos.toByteArray();
     }
 
@@ -56,15 +55,14 @@ public class Carro implements Registro {
         DataInputStream dis = new DataInputStream(bais);
 
         id = dis.readInt();
-        modelo = dis.readUTF();
-
+        modelo = dis.readUTF(); // ⭐ AGORA SEM DESCRIPTOGRAFIA
+        
         int n = dis.readInt();
         cores = new String[n];
         for (int i = 0; i < n; i++) cores[i] = dis.readUTF();
-
-        data_fabricacao = LocalDate.parse(dis.readUTF());
+        
+        data_fabricacao = LocalDate.ofEpochDay(dis.readLong());
         preco = dis.readFloat();
-
     }
 
     public String getModelo() { return modelo; }
@@ -75,7 +73,6 @@ public class Carro implements Registro {
     public void setData_fabricacao(LocalDate data_fabricacao) { this.data_fabricacao = data_fabricacao; }
     public float getPreco() { return preco; }
     public void setPreco(float preco) { this.preco = preco; }
-
 
     @Override
     public String toString() {
