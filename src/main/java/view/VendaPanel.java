@@ -28,7 +28,6 @@ public class VendaPanel extends JPanel {
     private JList<String> listCarrosSelecionados;
     private JTextField txtValorTotal;
     private JButton btnAdicionarCarro, btnRemoverCarro, btnRegistrarVenda;
-    private JButton btnDebugCarros; // Botão para debug
     
     public VendaPanel(VendaDAO vendaDAO, ClienteDAO clienteDAO, VendedorDAO vendedorDAO,
                      CarroDAO carroDAO, IndiceVendedorVendas indiceVendedorVendas,
@@ -44,9 +43,6 @@ public class VendaPanel extends JPanel {
         initComponents();
         carregarDadosCombos();
         carregarVendas();
-        
-        // Debug inicial
-        debugCarros();
     }
     
     private void initComponents() {
@@ -135,14 +131,10 @@ public class VendaPanel extends JPanel {
         btnRegistrarVenda.setFont(new Font("Arial", Font.BOLD, 14));
         btnRegistrarVenda.addActionListener(e -> registrarVenda());
         
-        btnDebugCarros = ButtonStyler.createStyledButton("Debug Carros", ButtonStyler.COLOR_SECONDARY);
-        btnDebugCarros.addActionListener(e -> debugCarros());
-        
         JButton btnRecarregarCarros = ButtonStyler.createStyledButton("Recarregar Carros", ButtonStyler.COLOR_PRIMARY);
         btnRecarregarCarros.addActionListener(e -> carregarDadosCombos());
         
         painelBotoesControle.add(btnRegistrarVenda);
-        painelBotoesControle.add(btnDebugCarros);
         painelBotoesControle.add(btnRecarregarCarros);
         
         painelFormulario.add(painelBotoesControle, gbc);
@@ -167,115 +159,43 @@ public class VendaPanel extends JPanel {
     
     private void carregarDadosCombos() {
         try {
-            System.out.println("=== CARREGANDO DADOS PARA VENDA ===");
-            
             comboVendedor.removeAllItems();
             comboCliente.removeAllItems();
             
             // carrega vendedores
             ArrayList<Vendedor> vendedores = vendedorDAO.readAll();
-            System.out.println("Vendedores encontrados: " + vendedores.size());
             for (Vendedor v : vendedores) {
                 String item = v.getCpf() + " - " + v.getNome();
                 comboVendedor.addItem(item);
-                System.out.println("Vendedor: " + item);
             }
             
             // carrega clientes
             ArrayList<Cliente> clientes = clienteDAO.readAll();
-            System.out.println("Clientes encontrados: " + clientes.size());
             for (Cliente c : clientes) {
                 String item = c.getCpf() + " - " + c.getNome();
                 comboCliente.addItem(item);
-                System.out.println("Cliente: " + item);
             }
             
             // carrega carros disponíveis
             DefaultListModel<String> modelo = new DefaultListModel<>();
             ArrayList<Carro> carros = carroDAO.readAll();
-            System.out.println("Carros encontrados no DAO: " + carros.size());
             
             for (Carro c : carros) {
                 String item = c.getId() + " - " + c.getModelo() + " (R$ " + c.getPreco() + ")";
                 modelo.addElement(item);
-                System.out.println("Carro adicionado: " + item);
             }
             
             listCarrosDisponiveis.setModel(modelo);
             
-            // Verifica se há erros na lista
             if (modelo.isEmpty()) {
-                System.out.println("ATENÇÃO: Lista de carros está VAZIA!");
-                System.out.println("Verifique se:");
-                System.out.println("1. Carros foram cadastrados no CarroPanel");
-                System.out.println("2. O arquivo carros.db existe na pasta dados/");
-                System.out.println("3. O DAO está funcionando corretamente");
-            } else {
-                System.out.println("Total de carros carregados na lista: " + modelo.size());
+                JOptionPane.showMessageDialog(this, 
+                    "Nenhum carro disponível para venda!\n" +
+                    "Cadastre carros primeiro na tela de Carros.",
+                    "Aviso", JOptionPane.WARNING_MESSAGE);
             }
             
         } catch (Exception e) {
-            System.err.println("ERRO ao carregar dados: " + e.getMessage());
-            e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Erro ao carregar dados: " + e.getMessage(),
-                                         "Erro", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-    
-    private void debugCarros() {
-        try {
-            StringBuilder debugInfo = new StringBuilder();
-            debugInfo.append("=== DEBUG DE CARROS ===\n\n");
-            
-            // Verifica DAO
-            debugInfo.append("1. Verificando DAO...\n");
-            if (carroDAO == null) {
-                debugInfo.append("   ❌ CarroDAO é NULL!\n");
-            } else {
-                debugInfo.append("   ✅ CarroDAO OK\n");
-            }
-            
-            // Tenta ler carros
-            debugInfo.append("\n2. Tentando ler carros...\n");
-            try {
-                ArrayList<Carro> carros = carroDAO.readAll();
-                debugInfo.append("   Total carros no DAO: ").append(carros.size()).append("\n");
-                
-                for (Carro c : carros) {
-                    debugInfo.append("   - ID: ").append(c.getId())
-                            .append(", Modelo: ").append(c.getModelo())
-                            .append(", Preço: R$ ").append(c.getPreco())
-                            .append("\n");
-                }
-                
-                // Verifica lista JList
-                debugInfo.append("\n3. Verificando JList...\n");
-                DefaultListModel<String> modelo = (DefaultListModel<String>) listCarrosDisponiveis.getModel();
-                debugInfo.append("   Itens na JList: ").append(modelo.size()).append("\n");
-                
-                for (int i = 0; i < modelo.size(); i++) {
-                    debugInfo.append("   - ").append(modelo.getElementAt(i)).append("\n");
-                }
-                
-            } catch (Exception e) {
-                debugInfo.append("   ❌ ERRO ao ler carros: ").append(e.getMessage()).append("\n");
-                e.printStackTrace();
-            }
-            
-            // Mostra debug
-            JTextArea textArea = new JTextArea(debugInfo.toString());
-            textArea.setEditable(false);
-            textArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
-            
-            JScrollPane scrollPane = new JScrollPane(textArea);
-            scrollPane.setPreferredSize(new Dimension(600, 400));
-            
-            JOptionPane.showMessageDialog(this, scrollPane,
-                                         "Debug de Carros",
-                                         JOptionPane.INFORMATION_MESSAGE);
-            
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Erro no debug: " + e.getMessage(),
                                          "Erro", JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -450,10 +370,7 @@ public class VendaPanel extends JPanel {
                 });
             }
             
-            System.out.println("Vendas carregadas: " + vendas.size());
-            
         } catch (Exception e) {
-            System.err.println("Erro ao carregar vendas: " + e.getMessage());
             JOptionPane.showMessageDialog(this, "Erro ao carregar vendas: " + e.getMessage(),
                                          "Erro", JOptionPane.ERROR_MESSAGE);
         }

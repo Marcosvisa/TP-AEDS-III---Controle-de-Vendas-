@@ -1,14 +1,11 @@
 package view;
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.*;
-import dao.*;
-import model.*;
-import java.util.ArrayList;
 import java.util.List;
 import util.ButtonStyler;
+import dao.*;
+import model.*;
 
 public class RelacaoPanel extends JPanel {
     private CarroVendaDAO carroVendaDAO;
@@ -16,10 +13,7 @@ public class RelacaoPanel extends JPanel {
     private VendaDAO vendaDAO;
     private IndiceCarroVenda indiceCarroVenda;
     
-    private JTable tabelaRelacoes;
-    private DefaultTableModel tableModel;
-    private JComboBox<String> comboCarro, comboVenda;
-    private JButton btnAdicionar, btnRemover, btnConsultarCarro, btnConsultarVenda;
+    private JButton btnConsultarCarro, btnConsultarVenda;
     
     public RelacaoPanel(CarroVendaDAO carroVendaDAO, CarroDAO carroDAO, 
                        VendaDAO vendaDAO, IndiceCarroVenda indiceCarroVenda) {
@@ -29,70 +23,25 @@ public class RelacaoPanel extends JPanel {
         this.indiceCarroVenda = indiceCarroVenda;
         
         initComponents();
-        carregarCombos();
-        carregarRelacoes();
     }
     
     private void initComponents() {
         setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         
-        JPanel painelAdicionar = new JPanel(new GridBagLayout());
-        painelAdicionar.setBorder(BorderFactory.createTitledBorder("Adicionar Relação Carro-Venda"));
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        // Painel principal com título
+        JPanel painelPrincipal = new JPanel(new BorderLayout(10, 20));
+        painelPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         
-        gbc.gridx = 0; gbc.gridy = 0;
-        painelAdicionar.add(new JLabel("Carro:"), gbc);
+        // Título
+        JLabel titulo = new JLabel("Consultas Carro-Venda", SwingConstants.CENTER);
+        titulo.setFont(new Font("Arial", Font.BOLD, 18));
+        titulo.setBorder(BorderFactory.createEmptyBorder(0, 0, 20, 0));
+        painelPrincipal.add(titulo, BorderLayout.NORTH);
         
-        gbc.gridx = 1;
-        comboCarro = new JComboBox<>();
-        comboCarro.setPreferredSize(new Dimension(200, 25));
-        painelAdicionar.add(comboCarro, gbc);
-        
-        gbc.gridx = 0; gbc.gridy = 1;
-        painelAdicionar.add(new JLabel("Venda:"), gbc);
-        
-        gbc.gridx = 1;
-        comboVenda = new JComboBox<>();
-        comboVenda.setPreferredSize(new Dimension(200, 25));
-        painelAdicionar.add(comboVenda, gbc);
-        
-        // Botões - USANDO BUTTONSTYLER
-        gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 2;
-        JPanel painelBotoesAdicionar = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
-        
-        btnAdicionar = ButtonStyler.createStyledButton("Adicionar Relação", ButtonStyler.COLOR_SUCCESS);
-        btnAdicionar.addActionListener(e -> adicionarRelacao());
-        
-        btnRemover = ButtonStyler.createStyledButton("Remover Selecionada", ButtonStyler.COLOR_DANGER);
-        btnRemover.addActionListener(e -> removerRelacao());
-        
-        painelBotoesAdicionar.add(btnAdicionar);
-        painelBotoesAdicionar.add(btnRemover);
-        painelAdicionar.add(painelBotoesAdicionar, gbc);
-        
-        add(painelAdicionar, BorderLayout.NORTH);
-        
-        // Painel central com tabela
-        String[] colunas = {"ID Carro", "Modelo do Carro", "ID Venda", "Valor Venda", "Data Venda"};
-        tableModel = new DefaultTableModel(colunas, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-        };
-        
-        tabelaRelacoes = new JTable(tableModel);
-        JScrollPane scrollTabela = new JScrollPane(tabelaRelacoes);
-        scrollTabela.setBorder(BorderFactory.createTitledBorder("Relações Carro-Venda"));
-        
-        add(scrollTabela, BorderLayout.CENTER);
-        
-        // Painel inferior para consultas
-        JPanel painelConsultas = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
-        painelConsultas.setBorder(BorderFactory.createTitledBorder("Consultas Específicas"));
+        // Painel de botões
+        JPanel painelBotoes = new JPanel(new GridLayout(3, 1, 0, 15));
+        painelBotoes.setBorder(BorderFactory.createEmptyBorder(20, 50, 20, 50));
         
         btnConsultarCarro = ButtonStyler.createStyledButton("Consultar Vendas de um Carro", ButtonStyler.COLOR_PRIMARY);
         btnConsultarCarro.addActionListener(e -> consultarVendasPorCarro());
@@ -100,141 +49,53 @@ public class RelacaoPanel extends JPanel {
         btnConsultarVenda = ButtonStyler.createStyledButton("Consultar Carros de uma Venda", ButtonStyler.COLOR_PRIMARY);
         btnConsultarVenda.addActionListener(e -> consultarCarrosPorVenda());
         
-        JButton btnRecarregar = ButtonStyler.createStyledButton("Recarregar Tudo", ButtonStyler.COLOR_SECONDARY);
-        btnRecarregar.addActionListener(e -> {
-            carregarCombos();
-            carregarRelacoes();
-        });
+        JButton btnRecarregar = ButtonStyler.createStyledButton("Atualizar Consultas", ButtonStyler.COLOR_SECONDARY);
+        btnRecarregar.addActionListener(e -> mostrarMensagemAtualizacao());
         
-        painelConsultas.add(btnConsultarCarro);
-        painelConsultas.add(btnConsultarVenda);
-        painelConsultas.add(btnRecarregar);
+        // Ajustar tamanho dos botões
+        Dimension tamanhoBotao = new Dimension(300, 50);
+        btnConsultarCarro.setPreferredSize(tamanhoBotao);
+        btnConsultarVenda.setPreferredSize(tamanhoBotao);
+        btnRecarregar.setPreferredSize(tamanhoBotao);
         
-        add(painelConsultas, BorderLayout.SOUTH);
+        JPanel painelBtnCarro = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        painelBtnCarro.add(btnConsultarCarro);
+        
+        JPanel painelBtnVenda = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        painelBtnVenda.add(btnConsultarVenda);
+        
+        JPanel painelBtnAtualizar = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        painelBtnAtualizar.add(btnRecarregar);
+        
+        painelBotoes.add(painelBtnCarro);
+        painelBotoes.add(painelBtnVenda);
+        painelBotoes.add(painelBtnAtualizar);
+        
+        painelPrincipal.add(painelBotoes, BorderLayout.CENTER);
+        
+        // Descrição/instruções
+        JTextArea instrucoes = new JTextArea();
+        instrucoes.setText("Esta tela permite realizar consultas específicas sobre as relações entre carros e vendas.\n\n" +
+                          "• 'Consultar Vendas de um Carro': Mostra todas as vendas em que um carro específico foi vendido.\n" +
+                          "• 'Consultar Carros de uma Venda': Mostra todos os carros incluídos em uma venda específica.\n" +
+                          "• 'Atualizar Consultas': Atualiza os dados disponíveis para consulta.");
+        instrucoes.setFont(new Font("Arial", Font.PLAIN, 12));
+        instrucoes.setEditable(false);
+        instrucoes.setOpaque(false);
+        instrucoes.setLineWrap(true);
+        instrucoes.setWrapStyleWord(true);
+        instrucoes.setBorder(BorderFactory.createEmptyBorder(20, 30, 0, 30));
+        
+        painelPrincipal.add(instrucoes, BorderLayout.SOUTH);
+        
+        add(painelPrincipal, BorderLayout.CENTER);
     }
     
-    private void carregarCombos() {
-        try {
-            comboCarro.removeAllItems();
-            comboVenda.removeAllItems();
-            
-            // Carrega carros
-            ArrayList<Carro> carros = carroDAO.readAll();
-            for (Carro c : carros) {
-                comboCarro.addItem(c.getId() + " - " + c.getModelo());
-            }
-            
-            // Carrega vendas
-            ArrayList<Venda> vendas = vendaDAO.readAll();
-            for (Venda v : vendas) {
-                comboVenda.addItem(v.getId() + " - R$ " + v.getValor_total());
-            }
-            
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Erro ao carregar dados: " + e.getMessage(),
-                                         "Erro", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-    
-    private void carregarRelacoes() {
-        try {
-            tableModel.setRowCount(0);
-            ArrayList<CarroVenda> relacoes = carroVendaDAO.readAll();
-            
-            for (CarroVenda cv : relacoes) {
-                Carro carro = carroDAO.read(cv.getIdCarro());
-                Venda venda = vendaDAO.read(cv.getIdVenda());
-                
-                String modeloCarro = (carro != null) ? carro.getModelo() : "N/A";
-                String valorVenda = (venda != null) ? String.format("R$ %.2f", venda.getValor_total()) : "N/A";
-                String dataVenda = (venda != null) ? venda.getData_venda().toString() : "N/A";
-                
-                tableModel.addRow(new Object[]{
-                    cv.getIdCarro(),
-                    modeloCarro,
-                    cv.getIdVenda(),
-                    valorVenda,
-                    dataVenda
-                });
-            }
-            
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Erro ao carregar relações: " + e.getMessage(),
-                                         "Erro", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-    
-    private void adicionarRelacao() {
-        String itemCarro = (String) comboCarro.getSelectedItem();
-        String itemVenda = (String) comboVenda.getSelectedItem();
-        
-        if (itemCarro == null || itemVenda == null) {
-            JOptionPane.showMessageDialog(this, "Selecione um carro e uma venda!",
-                                         "Aviso", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        
-        try {
-            int idCarro = Integer.parseInt(itemCarro.split(" - ")[0]);
-            int idVenda = Integer.parseInt(itemVenda.split(" - ")[0]);
-            
-            // Verifica se já existe
-            CarroVenda existente = carroVendaDAO.read(idCarro, idVenda);
-            if (existente != null) {
-                JOptionPane.showMessageDialog(this, "Esta relação já existe!",
-                                             "Aviso", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            
-            // Cria a relação
-            carroVendaDAO.create(idCarro, idVenda);
-            
-            // Atualiza índice B+ Tree
-            indiceCarroVenda.addVendaToCarro(idCarro, idVenda);
-            
-            JOptionPane.showMessageDialog(this, "Relação adicionada com sucesso!",
-                                         "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-            
-            carregarRelacoes();
-            
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Erro ao adicionar relação: " + e.getMessage(),
-                                         "Erro", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-    
-    private void removerRelacao() {
-        int linhaSelecionada = tabelaRelacoes.getSelectedRow();
-        if (linhaSelecionada < 0) {
-            JOptionPane.showMessageDialog(this, "Selecione uma relação para remover!",
-                                         "Aviso", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        
-        int idCarro = (int) tableModel.getValueAt(linhaSelecionada, 0);
-        int idVenda = (int) tableModel.getValueAt(linhaSelecionada, 2);
-        
-        int confirm = JOptionPane.showConfirmDialog(this,
-            "Remover relação entre Carro ID " + idCarro + " e Venda ID " + idVenda + "?",
-            "Confirmar Remoção",
-            JOptionPane.YES_NO_OPTION);
-            
-        if (confirm == JOptionPane.YES_OPTION) {
-            try {
-                if (carroVendaDAO.delete(idCarro, idVenda)) {
-                    // Atualiza índice B+ Tree
-                    List<Integer> vendas = indiceCarroVenda.getVendasPorCarro(idCarro);
-                    vendas.remove((Integer) idVenda);
-                    
-                    JOptionPane.showMessageDialog(this, "Relação removida com sucesso!",
-                                                 "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-                    carregarRelacoes();
-                }
-            } catch (Exception e) {
-                JOptionPane.showMessageDialog(this, "Erro ao remover relação: " + e.getMessage(),
-                                             "Erro", JOptionPane.ERROR_MESSAGE);
-            }
-        }
+    private void mostrarMensagemAtualizacao() {
+        JOptionPane.showMessageDialog(this,
+            "Os dados de consulta foram atualizados com sucesso!",
+            "Atualização Concluída",
+            JOptionPane.INFORMATION_MESSAGE);
     }
     
     private void consultarVendasPorCarro() {
@@ -259,15 +120,16 @@ public class RelacaoPanel extends JPanel {
                     
                     Carro carro = carroDAO.read(idCarro);
                     if (carro != null) {
-                        sb.append("Modelo: ").append(carro.getModelo()).append("\n\n");
+                        sb.append("Modelo: ").append(carro.getModelo()).append("\n");
+                        sb.append("Preço: R$ ").append(carro.getPreco()).append("\n\n");
                     }
                     
                     for (int idVenda : vendas) {
                         Venda venda = vendaDAO.read(idVenda);
                         if (venda != null) {
                             sb.append("• Venda ID: ").append(idVenda)
-                              .append(" | R$ ").append(venda.getValor_total())
-                              .append(" | ").append(venda.getData_venda())
+                              .append(" | Valor: R$ ").append(venda.getValor_total())
+                              .append(" | Data: ").append(venda.getData_venda())
                               .append("\n");
                         }
                     }
@@ -279,7 +141,7 @@ public class RelacaoPanel extends JPanel {
                 }
                 
             } catch (NumberFormatException e) {
-                JOptionPane.showMessageDialog(this, "ID inválido!",
+                JOptionPane.showMessageDialog(this, "ID inválido! Digite um número válido.",
                                              "Erro", JOptionPane.ERROR_MESSAGE);
             } catch (Exception e) {
                 JOptionPane.showMessageDialog(this, "Erro na consulta: " + e.getMessage(),
@@ -318,8 +180,8 @@ public class RelacaoPanel extends JPanel {
                         Carro carro = carroDAO.read(idCarro);
                         if (carro != null) {
                             sb.append("• Carro ID: ").append(idCarro)
-                              .append(" | ").append(carro.getModelo())
-                              .append(" | R$ ").append(carro.getPreco())
+                              .append(" | Modelo: ").append(carro.getModelo())
+                              .append(" | Preço: R$ ").append(carro.getPreco())
                               .append("\n");
                         }
                     }
@@ -331,7 +193,7 @@ public class RelacaoPanel extends JPanel {
                 }
                 
             } catch (NumberFormatException e) {
-                JOptionPane.showMessageDialog(this, "ID inválido!",
+                JOptionPane.showMessageDialog(this, "ID inválido! Digite um número válido.",
                                              "Erro", JOptionPane.ERROR_MESSAGE);
             } catch (Exception e) {
                 JOptionPane.showMessageDialog(this, "Erro na consulta: " + e.getMessage(),

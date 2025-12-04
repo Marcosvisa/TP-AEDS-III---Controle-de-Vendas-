@@ -1,6 +1,6 @@
 # 🚗 Sistema de Gerenciamento de Vendas de Concessionária
 
-Sistema para gerenciamento de vendas de uma concessionárA.
+Sistema para gerenciamento de vendas de uma concessionára.
 
 O sistema utiliza estruturas de dados avançadas para otimizar performance, segurança e armazenamento.
 
@@ -8,16 +8,11 @@ O sistema utiliza estruturas de dados avançadas para otimizar performance, segu
 
 ## 📋 Funcionalidades
 
-* ✅ **CRUD** de:
-
-  * Vendedores
-  * Clientes
-  * Carros
-  * Vendas
+* ✅ **CRUD** de Vendedores, Clientes, Carros, Vendas.
 * ✅ **Hashing Extensível** para buscas rápidas
-* ✅ **Árvore B+** para indexação eficiente
+* ✅ **Árvore B+** para buscas rápidas
 * ✅ **Persistência de dados** em arquivos binários
-* ✅ **Compressão de dados** com **Huffman** e **LZW**
+* ✅ **Compressão de dados** com Huffman e LZW
 * ✅ **Criptografia** para proteção de informações sensíveis
 * ✅ **Casamento de Padrões** para busca por entradas textuais
 * ✅ **Interface Gráfica** com JavaSwing

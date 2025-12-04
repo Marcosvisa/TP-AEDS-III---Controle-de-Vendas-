@@ -213,7 +213,7 @@ public class CompressaoPanel extends JPanel {
         btnDescomprimir = ButtonStyler.createStyledButton("📥 RESTAURAR BACKUP", ButtonStyler.COLOR_WARNING);
         btnDescomprimir.setFont(new Font("Arial", Font.BOLD, 16));
         btnDescomprimir.setPreferredSize(new Dimension(300, 50));
-        btnDescomprimir.addActionListener(e -> executarDescompressao()); // CORRIGIDO: executarDescompressao() com um 's'
+        btnDescomprimir.addActionListener(e -> executarDescompressao()); 
         painel.add(btnDescomprimir, gbc);
         
         return painel;

@@ -181,7 +181,7 @@ public class LoginFrame extends JFrame {
         add(painelCentral, BorderLayout.CENTER);
         
         //rodapé
-        JLabel lblRodape = new JLabel("Sistema de Gerenciamento de Vendas © 2024", JLabel.CENTER);
+        JLabel lblRodape = new JLabel("Sistema de Gerenciamento de Vendas © 2025", JLabel.CENTER);
         lblRodape.setFont(new Font("Arial", Font.ITALIC, 12));
         lblRodape.setForeground(Color.GRAY);
         add(lblRodape, BorderLayout.SOUTH);
@@ -223,7 +223,7 @@ public class LoginFrame extends JFrame {
     
     private void configurarJanela() {
         setTitle("Login - Sistema de Vendas");
-        setSize(600, 650); // Aumentei a altura para 650 para acomodar o título
+        setSize(600, 650); //
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
