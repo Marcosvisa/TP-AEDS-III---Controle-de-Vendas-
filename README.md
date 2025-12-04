@@ -1,9 +1,6 @@
 # 🚗 Sistema de Gerenciamento de Vendas de Concessionária
 
-Sistema para gerenciamento de vendas de uma concessionária, disponível em duas versões:
-
-* ✅ **Versão com Interface Gráfica**
-* ✅ **Versão em Modo Console**
+Sistema para gerenciamento de vendas de uma concessionárA.
 
 O sistema utiliza estruturas de dados avançadas para otimizar performance, segurança e armazenamento.
 
@@ -23,6 +20,7 @@ O sistema utiliza estruturas de dados avançadas para otimizar performance, segu
 * ✅ **Compressão de dados** com **Huffman** e **LZW**
 * ✅ **Criptografia** para proteção de informações sensíveis
 * ✅ **Casamento de Padrões** para busca por entradas textuais
+* ✅ **Interface Gráfica** com JavaSwing
 
 ---
 
@@ -38,12 +36,10 @@ O sistema utiliza estruturas de dados avançadas para otimizar performance, segu
 
 ---
 
-# 🖥️ VERSÃO COM INTERFACE GRÁFICA
-
 ## 🏗️ Estrutura do Projeto
 
 ```
-projeto/
+GERENCIADOR_VENDAS_CONSSESSIONARIA/
 ├── src/
 │   ├── app/           (Main e controladores)
 │   ├── dao/           (Acesso a dados)
@@ -51,6 +47,7 @@ projeto/
 │   ├── util/          (Utilitários)
 │   └── view/          (Interfaces gráficas)
 ├── insumos/           (Imagens e recursos)
+├── backup/            (Criado quando é realizado uma copressao)
 └── dados/             (Arquivos .db)
 ```
 
@@ -58,50 +55,18 @@ projeto/
 
 ## 🚀 Compilação e Execução
 
-### 📌 Compilar o projeto:
+### 📌 Compilar o projeto (Windows PowerShell):
 
-```bash
-javac -cp . util/*.java model/*.java dao/*.java view/*.java app/Main.java
+```powershell
+javac -d target/classes (Get-ChildItem -Recurse src/main/java -Filter *.java | ForEach-Object { $_.FullName })
 ```
 
 ### ▶️ Executar o sistema:
 
-```bash
-java -cp . app.Main
+```powershell
+java -cp target/classes app.Main
 ```
 
----
-
-# 🖥️ VERSÃO SEM INTERFACE (CONSOLE)
-
-## 🏗️ Estrutura do Projeto
-
-```
-projeto/
-├── app/           (Aplicação principal)
-├── model/         (Cliente, Vendedor, Carro, Venda)
-├── dao/           (Camada de acesso a dados)
-├── util/          (Utilitários)
-└── dados/         (Arquivos de dados)
-```
-
----
-
-## 🚀 Compilação e Execução
-
-### 📌 Compilar o projeto:
-
-```bash
-javac -cp . util/*.java model/*.java dao/*.java app/Main.java
-```
-
-### ▶️ Executar o sistema:
-
-```bash
-java -cp . app.Main
-```
-
----
 
 ## 📌 Observações
 
